@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Súp – Giao diện sáng / tối</title>
+
+  <!-- model-viewer -->
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
+  <!-- TensorFlow + Teachable Machine (Ảnh & Âm thanh) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio@0.8/dist/teachablemachine-audio.min.js"></script>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    html, body { width:100%; height:100%; zoom:100%; overflow-x:hidden; transition:background .5s ease; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+
+    :root {
+      /* 🎨 MODE SÁNG */
+      --sky: url('TaiNguyen/BackGroundSang.png');
+      --grass: url('TaiNguyen/NenCoSang.png');
+      --nav:#CDECFF;
+      --shadow1:#A5C2E9;
+      --shadow2:#90B0C4;
+      --user:#69B9E7;
+      --brand:#4B6BAD;
+      --page:#FFFFFF;
+      --text:#1e293b;
+      --panel:#ffffff;
+      --border:#dbeafe;
+    }
+
+    body.dark {
+      /* 🌙 MODE TỐI */
+      --sky: url('TaiNguyen/BackGroundToi.png');
+      --grass: url('TaiNguyen/NenCoToi.png');
+      --nav:#4D50A6;
+      --shadow1:#26264F;
+      --shadow2:#90B0C4;
+      --user:#6F77CC;
+      --brand:#4B6BAD;
+      --page:#0C0B3E;
+      --text:#E6E9FF;
+      --panel:#1A1B4D;
+      --border:#3D4CA0;
+    }
+
+    body {
+      font-family:'Poppins',sans-serif;
+      color:var(--text);
+      background:var(--page);
+      display:flex; flex-direction:column;
+      min-height:100vh; transition:all .4s ease;
+    }
+
+    /* ----- HEADER ----- */
+    header{
+      height:80px;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 60px;
+      background:var(--nav);
+      border-bottom:1px solid var(--shadow2);
+      box-shadow:0 6px 18px var(--shadow1);
+      transition:all .4s ease;
+    }
+    .logo{ font-weight:700; font-size:40px; color:var(--brand); transition:color .4s ease; }
+    body.dark .logo{ color:var(--text); }
+
+    nav a{
+      margin-left:25px; text-decoration:none; font-weight:600; font-size:20px;
+      color:var(--text); padding:6px 14px; border-radius:500px; transition:all .25s ease;
+    }
+    nav a:hover{ background:var(--shadow1); color:#fff; }
+    nav a.active{ background:#fff; color:var(--brand); box-shadow:0 0 0 3px var(--shadow2) inset; }
+
+    /* ----- MAIN + nền parallax ----- */
+    .main{
+      flex:1; display:flex; align-items:flex-end; justify-content:center;
+      position:relative; width:100%; height:80%;
+      overflow:hidden; padding:40px 80px; transition:background 1s ease;
+
+      background-image: var(--sky), var(--sky);
+      background-repeat: repeat-x, repeat-x;
+      background-size: 2000px auto, 2000px auto;
+      background-position: 0px -150px, 2000px -150px;
+      animation: skyLoop 200s linear infinite;
+    }
+    @keyframes skyLoop{
+      from{ background-position: 0px -150px, 2000px -150px; }
+      to  { background-position:-2000px -150px, 0px   -150px; }
+    }
+    .main::after{
+      content:""; position:absolute; bottom:0; left:0; right:0;
+      width:75%; height:95%;
+      background: var(--grass) no-repeat center bottom;
+      background-size: cover; z-index:1; transform:translateY(100px);
+      transition:background 1s ease;
+    }
+
+    /* ----- BỐ CỤC 3 CỘT: PET | CAMERA | CHAT ----- */
+    .container{
+      position:relative; z-index:2;
+      display:grid;
+      grid-template-columns: 1fr 0.9fr 1.1fr; /* pet | camera | chat */
+      align-items:end; justify-content:center; justify-items:center;
+      width:94%; margin:0 auto; gap:20px;
+    }
+
+    /* ----- PET ----- */
+    .pet-area{ position:relative; display:flex; align-items:flex-end; justify-content:center; height:1000px; }
+    model-viewer{
+      width:min(600px,50vw); height:min(600px,50vw);
+      background:transparent; --poster-color:transparent;
+      filter:drop-shadow(0 8px 18px rgba(0,0,0,.15));
+      transform: translate(100px, -100px);
+      transition: all .3s ease;
+    }
+    .bubble{
+      position:absolute; top:40px; left:58%;
+      background:var(--panel); padding:18px 26px; border-radius:50px;
+      box-shadow:0 10px 24px var(--shadow1); border:1px solid var(--border);
+      font-weight:600; color:var(--brand); transition:all .3s ease;
+    }
+
+    /* ----- CAMERA + MIC (new) ----- */
+    .ai-controls{
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+      background:var(--panel); border:1px solid var(--border); border-radius:20px; padding:20px;
+      box-shadow:0 8px 20px var(--shadow1);
+      transform: translateY(-60px);
+      width:280px;
+    }
+    .ai-controls video{ border-radius:16px; box-shadow:0 4px 12px rgba(0,0,0,.25); }
+    .ai-controls .btns{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+    .ai-controls button{
+      border:none; padding:8px 14px; border-radius:10px;
+      background:linear-gradient(90deg, var(--user), var(--brand)); color:#fff; font-weight:600; cursor:pointer;
+      box-shadow:0 6px 14px rgba(0,0,0,.2); transition:transform .2s ease;
+    }
+    .ai-controls button:hover{ transform:scale(1.05); }
+    .emotion-status{ font-weight:600; color:var(--brand); font-size:15px; text-align:center; }
+
+    /* ----- CHAT BOX ----- */
+    .chat-box{
+      background:var(--panel); border:1px solid var(--border); border-radius:40px;
+      box-shadow:0 8px 20px var(--shadow1);
+      display:flex; flex-direction:column;
+      height:620px; width:520px; max-width:90vw;
+      position:relative; overflow:hidden;
+      transform: translateX(-40px) translateY(-90px);
+      transition: all .4s ease;
+    }
+    .chat-header{
+      background:var(--nav); padding:18px 22px; font-weight:700; font-size:22px; color:var(--brand);
+      border-bottom:1px solid var(--shadow2); text-align:center; transition:all .3s ease;
+    }
+    body.dark .chat-header{ color:var(--text); }
+
+    .chat-body{ flex:1; padding:20px; overflow:auto; background:transparent; }
+    .msg{
+      max-width:75%; margin:8px 0; padding:12px 14px; border-radius:50px; border:1px solid var(--border);
+      position:relative; word-wrap:break-word; white-space:pre-wrap; transition: all .3s ease;
+    }
+    .msg.bot{ background:var(--panel); color:var(--text); border-color:var(--brand); }
+    .msg.user{ background:var(--user); color:#fff; margin-left:auto; }
+
+    .msg.bot::before{
+      content:""; position:absolute; left:-8px; top:10px;
+      border-right:8px solid var(--panel); border-top:8px solid transparent; border-bottom:8px solid transparent;
+    }
+    .msg.user::before{
+      content:""; position:absolute; right:-8px; top:10px;
+      border-left:8px solid var(--user); border-top:8px solid transparent; border-bottom:8px solid transparent;
+    }
+
+    .chat-footer{
+      padding:14px 16px; border-top:1px solid var(--border); background:var(--nav);
+      display:flex; align-items:center; gap:10px; transition:all .3s ease;
+    }
+    .mic{
+      width:48px; height:48px; border-radius:30px; border:1px solid var(--border);
+      background:var(--panel); display:grid; place-items:center; cursor:pointer; box-shadow:0 6px 14px var(--shadow1);
+      position:relative; overflow:hidden; transition:transform .2s ease, box-shadow .2s ease;
+    }
+    .mic svg{ width:22px; height:22px; color:var(--brand); }
+
+    /* ✨ Hiệu ứng khi đang nghe */
+    .mic.listening{
+      transform: scale(1.06);
+      box-shadow: 0 0 0 3px rgba(75,107,173,.2), 0 0 18px rgba(75,107,173,.45);
+    }
+    .mic.listening::after{
+      content:"";
+      position:absolute; inset:0;
+      border-radius:30px;
+      animation: pulse 1.2s ease-out infinite;
+      border:2px solid rgba(75,107,173,.45);
+    }
+    @keyframes pulse{
+      0%{ transform:scale(1); opacity:.9; }
+      100%{ transform:scale(1.35); opacity:0; }
+    }
+
+    body.dark .chat-footer{ background:transparent; border-top:none; display:flex; align-items:center; justify-content:center; gap:12px; padding:18px 20px; }
+    body.dark .mic{
+      border:none; background:radial-gradient(circle at 30% 30%, #AFC3FF, #3B4B8E 70%);
+      box-shadow:0 0 10px rgba(112,142,255,.6), 0 0 25px rgba(112,142,255,.3);
+    }
+    body.dark .mic.listening{
+      box-shadow:0 0 18px rgba(157,184,255,.9), 0 0 34px rgba(157,184,255,.5);
+    }
+    body.dark .mic svg{ color:#fff; opacity:.9; }
+
+    .input-wrap{
+      flex:1; display:flex; align-items:center; gap:10px;
+      background:var(--panel); border:1px solid var(--border); border-radius:30px; padding:8px 10px;
+    }
+    .input-wrap input{
+      flex:1; border:none; outline:none; font-size:15px; padding:6px 8px; color:var(--text); background:transparent;
+    }
+    .send{
+      border:none; border-radius:12px; background:linear-gradient(90deg,var(--user),var(--brand));
+      color:#fff; padding:10px 18px; font-weight:600; cursor:pointer;
+      box-shadow:0 6px 14px rgba(79,70,229,.25); transition:all .3s ease;
+    }
+
+    body.dark .input-wrap{
+      background:rgba(36,38,90,.8);
+      border:1px solid rgba(105,126,255,.25);
+      border-radius:24px; padding:12px 18px;
+      box-shadow: inset 0 0 6px rgba(100,130,255,.2), 0 0 12px rgba(55,80,200,.25);
+    }
+    body.dark .input-wrap input{ color:#fff; }
+    body.dark .input-wrap input::placeholder{ color:rgba(255,255,255,.6); font-style:italic; }
+
+    @media (max-width:1000px){
+      .main::after{ width:100%; }
+      .container{ grid-template-columns:1fr; }
+      .pet-area{ height:460px; }
+      .chat-box{ width:100%; transform:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="logo">🐶 Súp AI Pet</div>
+    <nav>
+      <a href="#" class="active">Home</a>
+      <a href="AboutUs.html" class="nav-link">About us</a>
+      <a href="#" id="modeToggle">Mode</a>
+    </nav>
+  </header>
+
+  <section class="main">
+    <div class="container">
+      <!-- 🐶 PET -->
+      <div class="pet-area">
+        <model-viewer src="supnheomatmomieng.glb" autoplay auto-rotate camera-controls disable-zoom></model-viewer>
+      </div>
+
+      <!-- 🎥 CAMERA + NHẬN DIỆN -->
+      <div class="ai-controls">
+        <video id="preview" autoplay playsinline muted width="240" height="180"></video>
+        <div class="btns">
+          <button id="startCamBtn">🎥 Bật camera</button>
+          <button id="stopCamBtn">⏹️ Tắt camera</button>
+        </div>
+        <div class="emotion-status">
+          Ảnh: <span id="emotion">–</span> |
+          Giọng: <span id="voiceEmotion">–</span> |
+          Tổng hợp: <span id="finalEmotion">–</span>
+        </div>
+      </div>
+
+      <!-- 💬 CHAT -->
+      <div class="chat-box">
+        <div class="chat-header">Trò chuyện với Súp</div>
+        <div id="chatBody" class="chat-body">
+          <div class="msg bot">Xin chào 👋 Mình là Súp!</div>
+        </div>
+        <div class="chat-footer">
+          <div class="mic" id="sttMic" title="Nhấn để nói / Nhấn lần nữa để gửi">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z"/>
+              <path d="M19 11a7 7 0 0 1-14 0"/>
+              <path d="M12 18v3"/>
+            </svg>
+          </div>
+          <div class="input-wrap">
+            <input id="msgInput" type="text" placeholder="Nhấn mic để nói..." />
+            <button id="sendBtn" class="send">Gửi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    /* =========================
+       CONFIG CHAT (Gemini)
+    ========================== */
+    const USE_PROXY      = false; // true nếu bạn dùng proxy
+    const PROXY_URL      = "http://localhost:8080/proxy/generate";
+    const GEMINI_API_KEY = "AIzaSyDH2LC1KP9bJKTbIXy2ysxYFZwADxWD4mg"; // demo cho localhost
+    const GEMINI_MODEL   = "gemini-2.0-flash";
+
+    function geminiEndpoint() {
+      if (USE_PROXY) return PROXY_URL;
+      return `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    }
+
+    /* ====== Toggle sáng/tối ====== */
+    const modeBtn = document.getElementById("modeToggle");
+    modeBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      document.body.classList.toggle("dark");
+      modeBtn.textContent = document.body.classList.contains("dark") ? "Light Mode" : "Dark Mode";
+    });
+
+    /* ====== Chat (Gemini) + TTS ====== */
+    const chatBody = document.getElementById('chatBody');
+    const input    = document.getElementById('msgInput');
+    const send     = document.getElementById('sendBtn');
+
+    function addMsg(text, who='bot'){
+      const div = document.createElement('div');
+      div.className = 'msg ' + (who === 'user' ? 'user' : 'bot');
+      div.textContent = text;
+      chatBody.appendChild(div);
+      chatBody.scrollTop = chatBody.scrollHeight;
+      return div;
+    }
+
+    async function sendMessage(){
+      const val = input.value.trim();
+      if(!val) return;
+      addMsg(val, 'user');
+      input.value='';
+      const thinking = addMsg('⏳ Đang nghĩ...', 'bot');
+
+      const sys =
+`Bạn là Súp – thú cưng dễ thương biết nói chuyện.
+Vai trò: an ủi và hỗ trợ tinh thần cơ bản (KHÔNG chẩn đoán y tế).
+Quy tắc:
+1) Viết ngắn 2–3 câu, giọng ấm áp với emoji 🐶💖✨.
+2) Công nhận cảm xúc trước, rồi động viên tích cực.
+3) Gợi ý một hành động nhỏ an toàn (hít thở, nghỉ ngơi…).
+4) Không đưa lời khuyên y tế phức tạp.
+5) Nếu có dấu hiệu tự hại rõ ràng → "Mình rất lo cho bạn 🥺, mình đã nhờ thầy cô và người lớn hỗ trợ thêm cho bạn ngay nhé."
+6) Nếu là thành ngữ kiểu "mệt muốn chết" (không ý định thực) thì coi là cách nói thường, đừng kích hoạt cảnh báo.
+Nếu không chắc chắn về ý định, hỏi nhẹ và đề nghị hỗ trợ từ người lớn.`;
+
+      try{
+        const url  = geminiEndpoint();
+        const body = USE_PROXY
+          ? { model: GEMINI_MODEL, contents: [{ parts: [{ text: sys + "\n\nNgười dùng: " + val }] }] }
+          : { contents: [{ parts: [{ text: sys + "\n\nNgười dùng: " + val }] }] };
+
+        const res  = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+
+        const raw = await res.text();
+        if(!res.ok){
+          thinking.textContent = `⚠️ Lỗi HTTP ${res.status}`;
+          console.warn("Gemini error:", raw);
+          return;
+        }
+        let data;
+        try{ data = JSON.parse(raw); }
+        catch{ thinking.textContent = "⚠️ Phản hồi không hợp lệ."; return; }
+
+        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text
+                    || "Mình chưa nghe rõ, bạn nói lại nhé 🐶";
+        thinking.textContent = reply;
+
+        const u = new SpeechSynthesisUtterance(reply);
+        u.lang = "vi-VN";
+        window.speechSynthesis.speak(u);
+
+      }catch(err){
+        console.error(err);
+        thinking.textContent = "⚠️ Không thể kết nối đến Gemini.";
+      }
+    }
+
+    send.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') send.click(); });
+
+    /* =========================
+       STT (Toggle Mic) + TỰ BẬT/TẮT cảm xúc giọng
+    ========================== */
+    const micBtn = document.getElementById('sttMic');
+    let rec = null, recActive = false;
+    let sttFinal = "", sttInterim = "";
+
+    function initSTT(){
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if(!SR){
+        alert("Trình duyệt không hỗ trợ nói để nhập (SpeechRecognition).");
+        return null;
+      }
+      const r = new SR();
+      r.lang = "vi-VN";
+      r.interimResults = true;
+      r.continuous = true;
+
+      r.onstart = async ()=>{
+        recActive = true;
+        sttFinal = ""; sttInterim = "";
+        micBtn.classList.add('listening');
+        input.placeholder = "Đang nghe... nói đi nhé!";
+
+        // 🔔 TỰ BẬT NHẬN DIỆN CẢM XÚC GIỌNG
+        if (!audioModel) { await initAudioModel(); }
+        else { await startAudioEmotion(); }
+      };
+
+      r.onresult = (ev)=>{
+        sttInterim = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const chunk = ev.results[i][0].transcript;
+          if (ev.results[i].isFinal) sttFinal += chunk + " ";
+          else sttInterim += chunk;
+        }
+        input.value = (sttFinal + sttInterim).trim();
+      };
+
+      r.onerror = (e)=>{
+        console.warn("STT error", e);
+        recActive = false;
+        micBtn.classList.remove('listening');
+        input.placeholder = "Nhấn mic để nói...";
+      };
+
+      r.onend = async ()=>{
+        // 🔕 TẮT NHẬN DIỆN GIỌNG khi dừng nói
+        await stopAudioEmotion();
+
+        micBtn.classList.remove('listening');
+        recActive = false;
+        input.placeholder = "Nhấn mic để nói...";
+        const toSend = (input.value || "").trim();
+        if(toSend) { await sendMessage(); }
+      };
+
+      return r;
+    }
+
+    micBtn.addEventListener('click', ()=>{
+      if(!rec) rec = initSTT();
+      if(!rec) return;
+      try{
+        if(recActive) { rec.stop(); }  // lần 2: dừng → onend sẽ tự gửi
+        else         { rec.start(); }  // lần 1: bắt đầu nghe + hiệu ứng
+      }catch(e){ console.warn(e); }
+    });
+
+    /* =========================
+       Teachable Machine – Ảnh & Âm thanh (cảm xúc)
+    ========================== */
+    let imageModel, audioModel, webcam;
+
+    const IMAGE_MODEL_URL = "./NhanDienCamXuc/";
+    const AUDIO_MODEL_URL = "./NhanDienAmThanh/"; // có model.json + metadata.json (+ weights)
+
+    function updateFinalEmotion(){
+      const img = document.getElementById('emotion').textContent || "UNKNOWN";
+      const voice = document.getElementById('voiceEmotion').textContent || "UNKNOWN";
+      const final = (voice && voice!=="UNKNOWN") ? voice : img;
+      document.getElementById('finalEmotion').textContent = final;
+    }
+
+    // Chuẩn hoá nhãn âm thanh -> nhóm chuẩn
+    function normalizeVoiceLabel(label){
+      const up = (label || "")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu,""); // bỏ dấu tiếng Việt
+
+      if (up.includes("VUI") || up.includes("HAPPY") || up.includes("JOY")) return "HAPPY";
+      if (up.includes("BUON") || up.includes("SAD") || up.includes("TRAM")) return "SAD";
+      if (up.includes("GIAN") || up.includes("ANGRY") || up.includes("TUC")) return "ANGRY";
+      if (up.includes("NEUTRAL") || up.includes("BINH") || up.includes("BT")) return "NEUTRAL";
+      if (up.includes("SILENCE") || up.includes("NOISE") || up.includes("BACKGROUND")) return "UNKNOWN";
+      return "UNKNOWN";
+    }
+
+    async function predictImage(){
+      if(!imageModel || !webcam) return;
+      try{
+        const pred = await imageModel.predict(webcam.canvas);
+        if(!pred?.length) return;
+        const best = pred.reduce((a,b)=> a.probability>b.probability ? a : b);
+        document.getElementById('emotion').textContent = best.className || "UNKNOWN";
+        updateFinalEmotion();
+      }catch(e){ console.warn("predictImage error", e); }
+    }
+
+    async function initImageModel(){
+      try{
+        imageModel = await tmImage.load(IMAGE_MODEL_URL + "model.json", IMAGE_MODEL_URL + "metadata.json");
+        console.log("✅ Model ảnh sẵn sàng");
+        await startCam();
+      }catch(e){
+        console.error("❌ Không tải được model ảnh:", e);
+        alert("Không tải được model ảnh. Kiểm tra đường dẫn NhanDienCamXuc/");
+      }
+    }
+
+    async function startCam(){
+      try{
+        const stream = await navigator.mediaDevices.getUserMedia({ video:true });
+        document.getElementById('preview').srcObject = stream;
+
+        webcam = new tmImage.Webcam(200, 200, true);
+        await webcam.setup({ facingMode:"user" });
+        await webcam.play();
+
+        const loopPredict = async () => {
+          webcam.update();
+          await predictImage();
+          requestAnimationFrame(loopPredict);
+        };
+        loopPredict();
+
+      }catch(err){
+        console.error("❌ Không thể bật camera:", err);
+        alert("Không thể bật camera. Hãy chạy trên https hoặc http://localhost và cho phép quyền.");
+      }
+    }
+
+    // Dùng create() để tương thích tốt với TM Audio 0.8
+    async function initAudioModel(){
+      try{
+        await navigator.mediaDevices.getUserMedia({ audio:true }); // xin quyền mic
+        const base = AUDIO_MODEL_URL.endsWith('/') ? AUDIO_MODEL_URL : (AUDIO_MODEL_URL + '/');
+        audioModel = await tmAudio.create(base + "model.json", base + "metadata.json");
+        console.log("✅ Model âm thanh sẵn sàng");
+        console.log("🔎 Nhãn lớp audio:", audioModel.getClassLabels?.() || "(không hỗ trợ API)");
+        await startAudioEmotion();
+      }catch(e){
+        console.error("❌ Không tải được model âm thanh:", e);
+        alert("Chưa có model âm thanh hoặc chưa cấp quyền micro. Kiểm tra NhanDienAmThanh/");
+      }
+    }
+
+    async function startAudioEmotion(){
+      if(!audioModel) return;
+      try{
+        try{ await audioModel.stopListening(); }catch{}
+        await audioModel.listen(preds => {
+          if(!preds?.length) return;
+
+          // Log top-3 để debug nhãn + xác suất
+          try{
+            const top3 = preds.slice().sort((a,b)=>b.probability-a.probability).slice(0,3);
+            console.table(top3);
+          }catch{}
+
+          const best = preds.reduce((a,b)=> a.probability>b.probability ? a : b);
+          const rawLabel = best.className || "UNKNOWN";
+          const norm = normalizeVoiceLabel(rawLabel);
+
+          // Hiện nhãn chuẩn nếu map được, ngược lại hiện nhãn gốc để bạn điều chỉnh mapping
+          document.getElementById('voiceEmotion').textContent = (norm !== "UNKNOWN") ? norm : rawLabel;
+          updateFinalEmotion();
+        }, {
+          includeSpectrogram: false,
+          overlapFactor: 0.5,
+          probabilityThreshold: 0.4 // có thể tinh chỉnh 0.35–0.6 tuỳ môi trường
+        });
+        console.log("🎤 Đang nhận diện cảm xúc qua giọng nói...");
+      }catch(err){
+        console.error("❌ Lỗi bật mic (audio emotion):", err);
+      }
+    }
+
+    async function stopAudioEmotion(){
+      try { await audioModel?.stopListening(); }
+      catch(e) { console.warn("Không thể dừng audioModel:", e); }
+      // Không xoá text để bạn vẫn thấy nhãn cuối cùng
+      console.log("⏹️ Đã tắt nhận diện cảm xúc giọng.");
+    }
+
+    /* ====== Nút điều khiển Camera ====== */
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("startCamBtn").onclick = initImageModel;
+      document.getElementById("stopCamBtn").onclick  = () => location.reload();
+    });
+  </script>
+</body>
+</html>

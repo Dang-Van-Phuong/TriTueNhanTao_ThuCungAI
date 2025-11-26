@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🐶 AI Pet Robot – Voice & Face Emotion</title>
+
+  <!-- LIBRARIES -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio@0.8/dist/teachablemachine-audio.min.js"></script>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+    :root{
+      --bg1:#e0f7fa; --bg2:#f1f8ff; --text:#0f172a; --muted:#64748b;
+      --border:#d0e0f0; --card:#ffffffcc; --accent:#06b6d4; --accent2:#10b981;
+      --arena-h:56vh; --arena-min:360px; --track-w:min(92vw,1100px); --pet-w:320px;
+    }
+    *{box-sizing:border-box;transition:all .25s ease}
+    body{font-family:'Poppins',sans-serif;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text);min-height:100vh;overflow-x:hidden}
+
+    /* SETTINGS OVERLAY */
+    #settingsOverlay{
+      position:fixed; inset:0; background:rgba(255,255,255,.95);
+      display:flex; align-items:center; justify-content:center; z-index:10002;
+    }
+    .settings-box{ background:#fff; border-radius:16px; padding:24px 26px; width:min(520px,94%);
+      box-shadow:0 8px 24px rgba(0,0,0,.15); }
+    .settings-box h2{ margin:0 0 10px; color:var(--accent); text-align:center }
+    .settings-grid{ display:grid; gap:16px; grid-template-columns:1fr 1fr }
+    .settings-section{ border:1px solid var(--border); border-radius:12px; padding:12px 14px; background:#fff }
+    .settings-section h4{ margin:0 0 8px; color:var(--muted) }
+    .pill{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--border);
+      border-radius:999px; margin:4px 6px 0 0; cursor:pointer; user-select:none }
+    .pill input{ accent-color:var(--accent); }
+    .pill:hover{ border-color:var(--accent) }
+    .settings-actions{ display:flex; gap:10px; justify-content:center; margin-top:14px }
+    #micBtn{ display:none } /* hiện khi ở mode voice */
+
+    /* TOAST */
+    #toast{
+      position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+      background:#0f172a; color:#fff; padding:10px 14px; border-radius:10px;
+      box-shadow:0 8px 18px rgba(0,0,0,.2); font-size:14px; z-index:10001;
+      opacity:0; pointer-events:none; transition:opacity .25s ease;
+    }
+    #toast.show{ opacity:1 }
+
+    /* POPUPS */
+  #endConfirmOverlay{
+    position:fixed; inset:0; background:rgba(255,255,255,0.9);
+    display:flex; align-items:center; justify-content:center; z-index:9999;
+  }
+
+    #endConfirmOverlay{ display:none; z-index:10000; }
+    .popup-box{
+      background:#fff; border-radius:16px; padding:28px 32px; max-width:380px; width:90%;
+      box-shadow:0 8px 24px rgba(0,0,0,0.15); text-align:center; animation:fadeIn .3s ease;
+    }
+    .popup-box h2{ color:var(--accent); margin:0 0 8px }
+    .popup-box label{ display:block; text-align:left; margin-top:10px; font-weight:500; color:var(--muted) }
+    .popup-box input{ width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border); margin-top:4px; font-size:14px }
+    .popup-box input:focus{ border-color:var(--accent); outline:none }
+    .popup-box button{ margin-top:14px }
+    @keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+
+    /* HEADER */
+    header{text-align:center;padding:24px 16px 10px}
+    h1{font-size:clamp(26px,3vw,34px);margin:0;background:linear-gradient(90deg,#06b6d4,#10b981);-webkit-background-clip:text;color:transparent;font-weight:600;letter-spacing:.2px}
+    .sub{color:var(--muted);font-size:15px;margin-top:6px}
+
+    /* ARENA */
+    .arena{width:100%;display:flex;align-items:center;justify-content:center;height:var(--arena-h);min-height:var(--arena-min);background:radial-gradient(circle at center,#d7fafa 0%,#e8f7ff 80%);border-top:2px solid #b3ecf5;border-bottom:2px solid #b3ecf5;box-shadow:inset 0 0 20px #c8f1ff}
+    .track{width:var(--track-w);height:100%;position:relative;margin:0 auto;overflow:hidden}
+    .pet-walk{position:absolute;bottom:0;left:0;width:var(--pet-w);will-change:transform;animation:patrol 14s ease-in-out infinite;transform-origin:center bottom;pointer-events:none}
+    @keyframes patrol{
+      0%{transform:translateX(0) scaleX(1);} 50%{transform:translateX(calc(var(--track-w) - var(--pet-w))) scaleX(1);}
+      51%{transform:translateX(calc(var(--track-w) - var(--pet-w))) scaleX(-1);} 100%{transform:translateX(0) scaleX(-1);}
+    }
+    model-viewer.pet{width:100%;height:min(54vh,420px);background:transparent;--poster-color:transparent;filter:drop-shadow(0 0 20px rgba(0,255,255,.3));border:none}
+
+    /* GRID + CARDS */
+    .container{max-width:1100px;margin:24px auto 50px;padding:0 16px}
+    .grid{display:grid;gap:24px;grid-template-columns:1fr 1fr}
+    @media(max-width:860px){.grid{grid-template-columns:1fr}}
+    .box{background:var(--card);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:18px;padding:20px 22px;box-shadow:0 8px 18px rgba(0,0,0,0.08);position:relative}
+    .box h3{margin:0 0 14px;color:var(--accent);font-weight:600;text-align:center;font-size:18px}
+    .hint{font-size:12px;color:var(--muted);margin-top:6px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center}
+    select,button,textarea{font-family:'Poppins',sans-serif;font-size:14px}
+    select{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff}
+    button{padding:10px 18px;border-radius:12px;border:1px solid var(--border);background:#e6faff;cursor:pointer;font-weight:500;color:#03696b}
+    button:hover{background:var(--accent);color:#fff;box-shadow:0 0 8px rgba(0,180,200,.4)}
+    button.primary{background:var(--accent2);border-color:var(--accent2);color:#fff}
+    button.primary:hover{background:#0ea36e;box-shadow:0 0 10px rgba(16,185,129,.4)}
+    button:disabled{opacity:.6;cursor:not-allowed}
+
+    /* CAMERA + CHAT */
+    #webcam{width:100%;max-width:300px;aspect-ratio:1/1;border-radius:14px;overflow:hidden;border:2px dashed var(--border);background:#f8fafc;display:flex;align-items:center;justify-content:center;margin:auto}
+    #rawVideoWrap video{border-radius:10px;box-shadow:0 0 8px rgba(0,0,0,0.15)}
+    #emotionBar{display:flex;gap:8px;align-items:center;font-weight:600;justify-content:center;margin-top:4px}
+    #emotion{padding:4px 10px;border-radius:10px;background:#ccfbf1;border:1px solid #99f6e4;color:#047857}
+    #diag{text-align:center;margin:6px 0 0}
+    #userText{width:100%;min-height:96px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);resize:vertical;background:#fff}
+    #userText:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px #a5f3fc}
+    #reply{padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:12px;min-height:150px;max-height:360px;overflow:auto;margin-top:12px}
+    .msg{margin:8px 0;background:#fff;padding:8px 10px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+    .msg b{color:var(--accent2)}
+  </style>
+</head>
+
+<body>
+  <!-- Open Settings button -->
+  <button id="openSettingsBtn" style="position:fixed; right:14px; bottom:14px; z-index:10001">⚙️</button>
+
+  <header>
+    <h1>🐶 AI Pet Robot – Voice & Face Emotion</h1>
+    <p class="sub">Dự án do các học sinh ưu tú của thầy Phương lên ý tưởng và phát triển</p>
+  </header>
+
+  <section class="arena" aria-label="Khu vực thú cưng AI">
+    <div class="track" id="track">
+      <div class="pet-walk" id="petWalk">
+        <model-viewer id="pet3d" class="pet" src="supp.glb"></model-viewer>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS OVERLAY -->
+  <div id="settingsOverlay">
+    <div class="settings-box">
+      <h2>⚙️ Cài đặt nhanh</h2>
+      <div class="settings-grid">
+        <div class="settings-section">
+          <h4>1) Chọn Font</h4>
+          <label class="pill"><input type="radio" name="fontPick" value="Poppins" checked> Poppins</label>
+          <label class="pill"><input type="radio" name="fontPick" value="Nunito"> Nunito</label>
+          <label class="pill"><input type="radio" name="fontPick" value="Quicksand"> Quicksand</label>
+
+          <h4 style="margin-top:10px">Chọn Nền</h4>
+          <label class="pill"><input type="radio" name="bgPick" value="aqua" checked> Aqua</label>
+          <label class="pill"><input type="radio" name="bgPick" value="pastel"> Pastel</label>
+          <label class="pill"><input type="radio" name="bgPick" value="dark"> Tối</label>
+        </div>
+
+        <div class="settings-section">
+          <h4>2) Phương thức trò chuyện</h4>
+          <label class="pill"><input type="radio" name="modePick" value="voice" checked> Giọng nói + Khuôn mặt</label>
+          <label class="pill"><input type="radio" name="modePick" value="chat"> Chat + Khuôn mặt</label>
+          <p class="hint" style="margin-top:8px">• Voice: micro + camera + TTS.<br>• Chat: gõ văn bản + camera.</p>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="saveSettingsBtn" class="primary">Lưu & Tiếp tục</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="grid">
+      <!-- CAMERA -->
+      <section class="box" aria-labelledby="cam-title">
+        <h3 id="cam-title">🎥 Camera & Nhận diện cảm xúc</h3>
+        <div class="row" style="gap:8px">
+          <select id="camSelect" style="min-width:240px"></select>
+          <button id="refreshBtn" title="Quét lại camera">Quét camera</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:14px">
+            <input type="checkbox" id="debugToggle"> Debug video
+          </label>
+        </div>
+
+        <div id="webcamWrap" style="display:flex;flex-direction:column;gap:10px">
+          <div id="webcam"><span class="hint">Video 1:1 sẽ hiển thị tại đây sau khi bật camera</span></div>
+          <div id="rawVideoWrap" style="display:none; text-align:center">
+            <video id="rawVideo" autoplay playsinline muted style="max-width:300px;border-radius:10px;border:1px solid var(--border)"></video>
+            <div class="hint">Xem trực tiếp luồng camera (debug)</div>
+          </div>
+
+          <div id="emotionBar">Cảm xúc camera: <span id="emotion">–</span></div>
+          <div id="voiceEmotionBar" class="hint" style="text-align:center">
+            🎙️ Giọng nói: <b id="voiceEmotion">–</b> <span id="voicePitch" style="opacity:.75"></span>
+          </div>
+          <div id="finalEmotionBar" style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:6px;font-weight:600">
+            Tổng hợp: <span id="finalEmotion" style="padding:4px 10px;border-radius:10px;background:#fef9c3;border:1px solid #fde68a;color:#92400e">–</span>
+          </div>
+
+          <p id="diag" class="hint">⏳ Chưa khởi động.</p>
+
+          <div class="row">
+            <button id="startBtn" class="primary">Bắt đầu</button>
+            <button id="stopBtn" disabled>Dừng</button>
+          </div>
+
+          <p class="hint" style="text-align:center">
+            Yêu cầu chạy trên HTTPS hoặc <code>http://localhost</code> để truy cập camera/micro.
+          </p>
+        </div>
+      </section>
+
+      <!-- CHAT -->
+      <section class="box" aria-labelledby="chat-title">
+        <h3 id="chat-title">💬 Trò chuyện với Gemini</h3>
+        <textarea id="userText" placeholder="Nhập lời bạn muốn nói..."></textarea>
+        <div class="row">
+          <button id="chatBtn" class="primary">Gửi</button>
+          <button id="micBtn" title="Nhấn để nói">🎤 Nói</button>
+          <button id="clearBtn" title="Xoá khung chat">Xoá</button>
+          <button id="endBtn" title="Kết thúc phiên">Kết thúc</button>
+        </div>
+        <div id="reply" aria-live="polite" aria-busy="false"></div>
+        <p class="hint">⚠️ Không nhúng API key trực tiếp trên client cho môi trường thật; hãy dùng backend/proxy.</p>
+      </section>
+    </div>
+  </div>
+  <!-- END CONFIRM POPUP -->
+  <div id="endConfirmOverlay">
+    <div class="popup-box">
+      <h2>🔔 Kết thúc phiên</h2>
+      <p>Bạn có muốn nhận thêm những lời khuyên hữu ích từ chuyên gia tâm lý chứ?</p>
+      <div class="row" style="margin-top:8px">
+        <button id="endYesBtn" class="primary">Có</button>
+        <button id="endNoBtn">Không</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+  <!-- ================== SCRIPT ================== -->
+  <script>
+    /* ================== CONFIG ================== */
+    const IMAGE_MODEL_URL = "./NhanDienCamXuc/";     // Thư mục chứa model ảnh: model.json, metadata.json
+    const AUDIO_MODEL_URL = "./NhanDienAmThanh/";    // Thư mục chứa model âm thanh: model.json, metadata.json, weights.bin
+    const GEMINI_API_KEY  = "AIzaSyDH2LC1KP9bJKTbIXy2ysxYFZwADxWD4mg";     // Demo: để trống hoặc thay bằng key thử nghiệm. Deploy thật: gọi qua backend/proxy.
+    const GEMINI_MODEL    = "gemini-2.5-flash";
+    const SEND_API_URL    = "http://localhost:3000/api/send-report";
+
+    /* ================== UTILITIES ================== */
+    function $(id){ return document.getElementById(id); }
+    function toast(msg){
+      const t = $("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(toast._t);
+      toast._t = setTimeout(()=>t.classList.remove("show"), 2500);
+    }
+
+    /* ================== THEME / MODE ================== */
+    function applyFont(font){
+      const head = document.head;
+      const id = "dynamic-font";
+      const exist = document.getElementById(id);
+      const map = {
+        "Poppins":"Poppins:wght@400;500;600",
+        "Nunito":"Nunito:wght@400;600;700",
+        "Quicksand":"Quicksand:wght@400;600;700"
+      };
+      const fam = map[font] || map.Poppins;
+      if(exist) exist.remove();
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = `https://fonts.googleapis.com/css2?family=${fam}&display=swap`;
+      head.appendChild(link);
+      document.body.style.fontFamily = `'${font}', sans-serif`;
+    }
+    function applyBackground(bg){
+      if(bg==="dark"){
+        document.body.style.background = "#0b1120";
+        document.body.style.color = "#e2e8f0";
+      }else if(bg==="pastel"){
+        document.body.style.background = "linear-gradient(180deg,#fff7f9,#f4faff)";
+        document.body.style.color = "var(--text)";
+      }else{
+        document.body.style.background = "linear-gradient(180deg,var(--bg1),var(--bg2))";
+        document.body.style.color = "var(--text)";
+      }
+    }
+    function setModeUI(mode){
+      const isVoice = mode === "voice";
+      $("userText").style.display = isVoice ? "none" : "block";
+      $("chatBtn").style.display  = isVoice ? "none" : "inline-block";
+      $("micBtn").style.display   = isVoice ? "inline-block" : "none";
+      if(isVoice){
+        startAudioEmotion();   // bật nhận diện cảm xúc giọng nói bằng Teachable Machine Audio
+      }else{
+        stopAudioEmotion();    // tắt khi chuyển sang chat
+      }
+    }
+
+    /* ================== GLOBALS ================== */
+    let imageModel = null;     // Teachable Machine IMAGE model (nhận diện cảm xúc khuôn mặt)
+    let audioModel = null;     // Teachable Machine AUDIO model (nhận diện cảm xúc giọng nói)
+    let webcam = null;         // tmImage.Webcam
+    let loopId = null;
+    let isRunning = false;
+    let ended = false;
+
+    let audioListening = false;  // trạng thái listen() của tmAudio
+    let lastVoiceLabel = "UNKNOWN";  // nhãn cảm xúc giọng nói hiện tại
+
+    /* ================== USER INFO ================== */
+    function getUserInfoSession(){
+      try{
+        const r = sessionStorage.getItem("userInfo");
+        return r ? JSON.parse(r) : null;
+      }catch{ return null; }
+    }
+    function setUserInfoSession(info){
+      sessionStorage.setItem("userInfo", JSON.stringify(info));
+    }
+
+    /* ================== IMAGE EMOTION (Teachable Machine Image) ================== */
+    async function initImageModel(){
+      const base = IMAGE_MODEL_URL.replace(/\/?$/, "/");
+      $("diag").innerText = "⬇️ Đang tải model (camera)...";
+      try{
+        imageModel = await tmImage.load(base + "model.json", base + "metadata.json");
+        $("diag").innerText = "✅ Model ảnh đã sẵn sàng";
+      }catch(e){
+        console.error(e);
+        $("diag").innerText = "❌ Không tải được model ảnh.";
+      }
+    }
+    async function ensureVideoPermissionOnce(){
+      await navigator.mediaDevices.getUserMedia({ video:true, audio:false });
+    }
+    async function listCameras(){
+      const sel = $("camSelect"); sel.innerHTML = "";
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      const cams = devs.filter(d => d.kind === "videoinput");
+      if(!cams.length){ alert("Không tìm thấy camera."); return; }
+      cams.forEach((c,i)=>{
+        const o = document.createElement("option");
+        o.value = c.deviceId;
+        o.textContent = c.label || `Camera ${i+1}`;
+        sel.appendChild(o);
+      });
+    }
+    function stopCam(keep=false){
+      if(loopId) cancelAnimationFrame(loopId);
+      loopId = null;
+      if(webcam){
+        try{ webcam.stop(); }catch{}
+        webcam = null;
+      }
+      isRunning = false;
+      if(!keep){
+        $("startBtn").disabled = false;
+        $("stopBtn").disabled = true;
+      }
+      $("diag").innerText = "⏹️ Đã dừng camera.";
+      const v = $("rawVideo");
+      if(v){
+        v.pause?.();
+        v.srcObject = null;
+      }
+    }
+    async function startCam(){
+      stopCam(true);
+      $("diag").innerText = "🎥 Xin quyền camera...";
+      await ensureVideoPermissionOnce();
+      if(!$("camSelect").options.length) await listCameras();
+
+      const deviceId = $("camSelect").value;
+      const flip = true;
+      webcam = new tmImage.Webcam(300, 300, flip);
+      try{
+        await webcam.setup({ deviceId:{ exact:deviceId }, width:{ ideal:1280 }, height:{ ideal:720 } });
+      }catch{
+        await webcam.setup({ facingMode:"user", width:{ ideal:1280 }, height:{ ideal:720 } });
+      }
+      await webcam.play();
+      isRunning = true;
+
+      $("webcam").innerHTML = "";
+      $("webcam").appendChild(webcam.canvas);
+
+      $("diag").innerText = "🟢 Camera OK – đang dự đoán...";
+      if($("debugToggle").checked){
+        $("rawVideoWrap").style.display = "block";
+        $("rawVideo").srcObject = webcam.webcam.srcObject;
+      }else{
+        $("rawVideoWrap").style.display = "none";
+      }
+      loopId = requestAnimationFrame(loopImagePredict);
+    }
+    async function loopImagePredict(){
+      if(!isRunning) return;
+      webcam.update();
+      await predictImageEmotion();
+      loopId = requestAnimationFrame(loopImagePredict);
+    }
+    function normalizeLabelToKey(upText){
+      // Chuẩn hoá tên lớp thành KEY chuẩn
+      const MAP = {
+        HAPPY:["HAPPY","JOY","VUI"],
+        SAD:["SAD","BUON","BUỒN"],
+        ANGRY:["ANGRY","GIẬN","GIAN","TỨC","TUC"],
+        SURPRISED:["SURPRISED","SURPRISE","NGẠC","NGAC"],
+        NEUTRAL:["NEUTRAL","BT","BÌNH","BINH","NORMAL","BINH_THUONG","BÌNH THƯỜNG"]
+      };
+      for(const k in MAP){
+        if(MAP[k].some(x => upText.includes(x))) return k;
+      }
+      return "NEUTRAL";
+    }
+    function update3DByEmotion(key){
+      const mv = $("pet3d");
+      const setAnim = (n)=> mv?.setAttribute("animation-name", n);
+      const map = { HAPPY:'Happy', SAD:'Sad', ANGRY:'Angry', SURPRISED:'Surprised', NEUTRAL:'Idle' };
+      setAnim(map[key] || 'Idle');
+    }
+    async function predictImageEmotion(){
+      if(!imageModel || !webcam) return;
+      try{
+        const pred = await imageModel.predict(webcam.canvas);
+        if(!pred?.length){
+          $("emotion").innerText = "–";
+          return;
+        }
+        const best = pred.reduce((a,b)=> a.probability>b.probability ? a : b);
+        const name = (best.className || "").toString();
+        const pct  = (best.probability*100).toFixed(1);
+        $("emotion").innerText = `${name} ${pct}%`;
+        const key = normalizeLabelToKey(name.toUpperCase());
+        update3DByEmotion(key);
+        updateFinalEmotion(); // hợp nhất với giọng nói
+      }catch(e){
+        console.error(e);
+        $("emotion").innerText = "Lỗi dự đoán ảnh";
+      }
+    }
+
+    /* ================== AUDIO EMOTION (Teachable Machine Audio) ================== */
+    async function initAudioModel(){
+      const base = AUDIO_MODEL_URL.replace(/\/?$/, "/");
+      try{
+        // tmAudio.create() sẽ xin quyền micro khi listen()
+        audioModel = await tmAudio.create(base + "model.json", base + "metadata.json");
+        // Đọc nhãn lớp để hiển thị gợi ý (nếu cần): audioModel.getClassLabels()
+      }catch(e){
+        console.error(e);
+        toast("❌ Không tải được model âm thanh.");
+      }
+    }
+    async function startAudioEmotion(){
+      if(audioListening) return;
+      if(!audioModel){
+        await initAudioModel();
+        if(!audioModel) return;
+      }
+      try{
+        // Lắng nghe từ mic và trả về dự đoán liên tục
+        await audioModel.listen(async (predictions) => {
+          // predictions: [{className, probability}, ...]
+          if(!predictions?.length) return;
+          const best = predictions.reduce((a,b)=> a.probability>b.probability ? a : b);
+          const label = (best.className || "").toString();
+          const prob  = (best.probability*100).toFixed(1);
+
+          // Chuẩn hoá nhãn về key
+          const key = normalizeVoiceLabel(label);
+          lastVoiceLabel = key;
+
+          $("voiceEmotion").innerText = `${label} ${prob}%`;
+          $("voicePitch").innerText   = ""; // Không dùng f0 khi đã có model âm thanh
+          updateFinalEmotion();
+
+        }, {
+          includeSpectrogram: false,
+          probabilityThreshold: 0.6,   // có thể chỉnh cao/thấp tuỳ model
+          overlapFactor: 0.5,          // 0.5 = 50% chồng lấp, dự đoán mượt hơn
+        });
+        audioListening = true;
+        toast("🎙️ Đang nhận diện cảm xúc qua giọng nói...");
+      }catch(e){
+        console.error(e);
+        toast("Không bật được micro cho model âm thanh. Kiểm tra quyền.");
+      }
+    }
+    async function stopAudioEmotion(){
+      try{
+        await audioModel?.stopListening();
+      }catch{}
+      audioListening = false;
+      $("voiceEmotion").innerText = "–";
+      $("voicePitch").innerText   = "";
+      lastVoiceLabel = "UNKNOWN";
+    }
+    function normalizeVoiceLabel(label){
+      const up = (label || "").toUpperCase();
+      if(up.includes("VUI") || up.includes("HAPPY") || up.includes("JOY")) return "HAPPY";
+      if(up.includes("BUỒN") || up.includes("BUON") || up.includes("SAD") || up.includes("TRẦM") || up.includes("TRAM")) return "SAD";
+      if(up.includes("NEUTRAL") || up.includes("BÌNH") || up.includes("BINH")) return "NEUTRAL";
+      return "UNKNOWN";
+    }
+
+    /* ================== FUSION: CAMERA + VOICE ================== */
+    function getCameraKeyFromUI(){
+      const txt = ($("emotion").innerText || "").toUpperCase();
+      return normalizeLabelToKey(txt);
+    }
+    function updateFinalEmotion(){
+      const cam = getCameraKeyFromUI();   // "HAPPY", "SAD", "ANGRY", "SURPRISED", "NEUTRAL", "UNKNOWN"
+      const voc = lastVoiceLabel || "UNKNOWN";
+
+      // Quy tắc gộp:
+      // 1) Nếu giọng nói xác định rõ (HAPPY/SAD/NEUTRAL) → ưu tiên giọng nói
+      // 2) Nếu giọng nói UNKNOWN → dùng camera
+      // 3) Nếu mâu thuẫn mạnh (ví dụ cam ANGRY, voice HAPPY) → vẫn ưu tiên voice
+      let finalKey = "NEUTRAL";
+      if(voc !== "UNKNOWN") finalKey = voc;
+      else if(cam !== "UNKNOWN") finalKey = cam;
+
+      $("finalEmotion").innerText = finalKey;
+    }
+
+    /* ================== CHAT WITH GEMINI + STT (BROWSER) ================== */
+    const chatBox = $("reply");
+    const inputBox = $("userText");
+
+    function appendMsg(role, text){
+      const d = document.createElement("div");
+      d.className = "msg";
+      d.innerHTML = `<b>${role}:</b> ${text}`;
+      chatBox.appendChild(d);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function sendMessage(){
+      if(ended){
+        appendMsg("🐶 PetBot","Phiên đã kết thúc. Bấm Kết thúc → Không để mở phiên mới.");
+        return;
+      }
+      const info = getUserInfoSession();
+      if(!info){
+        $("userInfoOverlay").style.display = "flex";
+        alert("Vui lòng nhập Họ tên, Lớp, Trường trước khi trò chuyện nhé!");
+        return;
+      }
+      const text = inputBox.value.trim();
+      if(!text) return;
+
+      appendMsg("Bạn", text);
+      inputBox.value = "";
+      $("chatBtn").disabled = true;
+      chatBox.setAttribute('aria-busy','true');
+
+      const camEmotion = $("finalEmotion").innerText || $("emotion").innerText || "–";
+      const prompt = `Bạn là thú cưng dễ thương (PetBot). Thông tin: Tên ${info.name}, Lớp ${info.cls}, Trường ${info.school}. Cảm xúc hiện tại (gộp): ${camEmotion}. Học sinh nói: "${text}". Trả lời ≤3 câu, thân thiện.`;
+
+      const ctrl = new AbortController();
+      const timeoutId = setTimeout(()=>ctrl.abort(), 20000);
+
+      try{
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+        const res = await fetch(url, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ contents:[{ parts:[{ text:prompt }]}] }),
+          signal: ctrl.signal
+        });
+        const data = await res.json();
+        const replyText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Xin lỗi, mình chưa nghe rõ. Bạn nói lại nhé?";
+        appendMsg("🐶 PetBot", replyText);
+
+        // Nói lại bằng TTS của trình duyệt
+        const u = new SpeechSynthesisUtterance(replyText);
+        u.lang = "vi-VN";
+        u.rate = 1.0;
+        u.pitch = 1.0;
+        window.speechSynthesis.speak(u);
+      }catch(e){
+        console.error(e);
+        appendMsg("🐶 PetBot","Có lỗi khi gọi Gemini. Kiểm tra mạng/API key.");
+      }finally{
+        clearTimeout(timeoutId);
+        $("chatBtn").disabled = false;
+        chatBox.setAttribute('aria-busy','false');
+      }
+    }
+
+    // Browser SpeechRecognition for text input by voice (nút 🎤 Nói)
+    let rec = null, recActive = false;
+    function initSTT(){
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if(!SR){
+        toast("Trình duyệt không hỗ trợ nhận diện giọng nói (SpeechRecognition).");
+        return null;
+      }
+      const r = new SR();
+      r.lang = "vi-VN";
+      r.interimResults = false;
+      r.continuous = false;
+      r.onstart = ()=>{ recActive=true; $("micBtn").textContent="🎙️ Đang nghe..."; };
+      r.onend   = ()=>{ recActive=false; $("micBtn").textContent="🎤 Nói"; };
+      r.onerror = (e)=>{ recActive=false; $("micBtn").textContent="🎤 Nói"; console.warn("STT error", e); toast("Không thu được tiếng, thử lại nhé!"); };
+      r.onresult = async (ev)=>{
+        const text = ev.results?.[0]?.[0]?.transcript?.trim();
+        if(text){
+          inputBox.value = text;
+          await sendMessage();
+        }
+      };
+      return r;
+    }
+
+    /* ================== EXCEL REPORT ================== */
+    function buildExcelBlob(info){
+      const now = new Date();
+      const rows = [
+        ["BÁO CÁO TƯ VẤN TÂM LÝ"],
+        [""],
+        ["Họ và tên", info.name],
+        ["Lớp", info.cls],
+        ["Trường", info.school],
+        ["Cảm xúc camera", $("emotion").innerText || "–"],
+        ["Cảm xúc giọng nói", $("voiceEmotion").innerText || "–"],
+        ["Tổng hợp cuối", $("finalEmotion").innerText || "–"],
+        ["Thời điểm", now.toLocaleString()],
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "BaoCao");
+      const wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+      return new Blob([wbout], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    }
+    async function trySendEmail(info){
+      const blob = buildExcelBlob(info);
+      try{
+        const form = new FormData();
+        form.append("name", info.name);
+        form.append("cls", info.cls);
+        form.append("school", info.school);
+        form.append("emotion_camera", $("emotion").innerText || "–");
+        form.append("emotion_voice", $("voiceEmotion").innerText || "–");
+        form.append("emotion_final", $("finalEmotion").innerText || "–");
+        form.append("file", new File([blob], "bao_cao_tam_ly.xlsx", {type: blob.type}));
+
+        const res = await fetch(SEND_API_URL, { method:"POST", body: form });
+        if(!res.ok) throw new Error(await res.text());
+        toast("✅ Đã gửi báo cáo Excel đến email của chuyên gia.");
+        appendMsg("🐶 PetBot", "✅ Đã gửi báo cáo Excel đến email của chuyên gia. Cảm ơn bạn!");
+      }catch(err){
+        console.warn("Gửi email thất bại/không có server. Tải file về máy.", err);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = "bao_cao_tam_ly.xlsx"; a.click();
+        URL.revokeObjectURL(url);
+        toast("⚠️ Không gửi được email. Đã tải file Excel về máy bạn.");
+        appendMsg("🐶 PetBot", "⚠️ Không gửi được email (server chưa chạy/URL sai). Mình đã tải file Excel về máy bạn.");
+      }
+    }
+
+    /* ================== UI EVENTS ================== */
+    $("chatBtn").addEventListener("click", sendMessage);
+    $("clearBtn").addEventListener("click", ()=>{ $("reply").innerHTML=""; });
+    $("userText").addEventListener("keydown", async (e)=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); await sendMessage(); }});
+
+    $("refreshBtn").addEventListener("click", async ()=>{
+      try{ await ensureVideoPermissionOnce(); await listCameras(); }
+      catch(e){ alert(e.message); }
+    });
+    $("camSelect").addEventListener("change", async ()=>{
+      try{
+        await startCam();
+        $("startBtn").disabled = true;
+        $("stopBtn").disabled  = false;
+      }catch(e){ alert("Không bật được camera: " + e.message); }
+    });
+    $("debugToggle").addEventListener("change", ()=>{
+      const on = $("debugToggle").checked;
+      $("rawVideoWrap").style.display = on ? "block" : "none";
+      if(on && webcam?.webcam?.srcObject) $("rawVideo").srcObject = webcam.webcam.srcObject;
+      else $("rawVideo").srcObject = null;
+    });
+    $("startBtn").addEventListener("click", async ()=>{
+      try{
+        if(!imageModel){ await initImageModel(); }
+        await listCameras();
+        await startCam();
+        $("startBtn").disabled = true;
+        $("stopBtn").disabled  = false;
+      }catch(e){
+        console.error(e);
+        alert("Không bật được camera: " + e.message);
+      }
+    });
+    $("stopBtn").addEventListener("click", ()=>{ stopCam(); });
+
+    $("micBtn").addEventListener("click", ()=>{
+      const cfg = JSON.parse(localStorage.getItem("pet_settings") || "{}");
+      if(cfg.mode!=="voice"){ toast("Hãy chọn chế độ Giọng nói + Khuôn mặt trong Cài đặt."); return; }
+      if(!rec) rec = initSTT();
+      if(!rec) return;
+      if(recActive){ try{ rec.stop(); }catch{} return; }
+      try{ rec.start(); }catch(e){ console.warn(e); }
+    });
+
+    $("openSettingsBtn").addEventListener("click", ()=>{
+      const st = $("settingsOverlay");
+      if(st) st.style.display = "flex";
+    });
+
+    // cập nhật kích thước track để con pet đi qua lại đúng kích thước
+    const trackEl = $("track");
+    new ResizeObserver(()=>{
+      document.documentElement.style.setProperty('--track-w', trackEl.clientWidth + 'px');
+    }).observe(trackEl);
+
+    // SETTINGS → USER INFO
+    window.addEventListener("DOMContentLoaded", ()=>{
+      // mở settings trước
+      const st = $("settingsOverlay");
+      st.style.display = "flex";
+      $("chatBtn").disabled = true;
+
+      // nếu đã có cấu hình
+      try{
+        const raw = localStorage.getItem("pet_settings");
+        if(raw){
+          const cfg = JSON.parse(raw);
+          document.querySelectorAll('input[name="fontPick"]').forEach(r=>{ r.checked = (r.value === cfg.font); });
+          document.querySelectorAll('input[name="bgPick"]').forEach(r=>{ r.checked = (r.value === cfg.bg); });
+          document.querySelectorAll('input[name="modePick"]').forEach(r=>{ r.checked = (r.value === cfg.mode); });
+          applyFont(cfg.font || "Poppins");
+          applyBackground(cfg.bg || "aqua");
+          setModeUI(cfg.mode || "voice");
+        }
+      }catch{}
+
+      $("saveSettingsBtn").addEventListener("click", ()=>{
+        const font = (document.querySelector('input[name="fontPick"]:checked')?.value) || "Poppins";
+        const bg   = (document.querySelector('input[name="bgPick"]:checked')?.value) || "aqua";
+        const mode = (document.querySelector('input[name="modePick"]:checked')?.value) || "voice";
+
+        localStorage.setItem("pet_settings", JSON.stringify({font,bg,mode}));
+        applyFont(font);
+        applyBackground(bg);
+        setModeUI(mode);
+
+        // đóng settings, mở user info
+        st.style.display = "none";
+
+        const overlay = $("userInfoOverlay");
+        const saveBtn = $("saveInfoBtn");
+        overlay.style.display = "flex";
+
+        // prefill nếu có
+        const nameInput = $("fullName");
+        const clsInput  = $("className");
+        const schInput  = $("schoolName");
+        try{
+          const raw = localStorage.getItem("userInfo");
+          if(raw){
+            const inf = JSON.parse(raw);
+            nameInput.value = inf?.name || "";
+            clsInput.value  = inf?.cls || "";
+            schInput.value  = inf?.school || "";
+          }
+        }catch{}
+
+        saveBtn.addEventListener("click", ()=>{
+          const name = nameInput.value.trim();
+          const cls  = clsInput.value.trim();
+          const school = schInput.value.trim();
+          if(!name || !cls || !school){
+            alert("Vui lòng nhập đầy đủ họ tên, lớp và trường!");
+            return;
+          }
+          setUserInfoSession({name,cls,school});
+          localStorage.setItem("userInfo", JSON.stringify({name,cls,school}));
+          overlay.style.display = "none";
+          $("chatBtn").disabled = false;
+          appendMsg("🐶 PetBot", `Xin chào ${name} lớp ${cls} – ${school}! Mình rất vui được trò chuyện cùng bạn 💖`);
+        }, {once:true});
+      }, {once:true});
+    });
+
+    // END SESSION
+    $("endBtn").addEventListener("click", ()=>{ $("endConfirmOverlay").style.display="flex"; });
+    $("endYesBtn").addEventListener("click", async ()=>{
+      $("endConfirmOverlay").style.display="none";
+      const info = getUserInfoSession();
+      if(!info){
+        appendMsg("🐶 PetBot","Thiếu thông tin người dùng. Vui lòng nhập lại.");
+        $("userInfoOverlay").style.display="flex";
+        return;
+      }
+      ended = true;
+      $("chatBtn").disabled = true;
+      $("userText").disabled = true;
+      appendMsg("🐶 PetBot","Mình sẽ gửi báo cáo Excel cho chuyên gia, đợi chút nhé…");
+      await trySendEmail(info);
+    });
+    $("endNoBtn").addEventListener("click", ()=>{
+      $("endConfirmOverlay").style.display = "none";
+      $("reply").innerHTML = "";
+      ended = false;
+      $("chatBtn").disabled = false;
+      $("userText").disabled = false;
+      appendMsg("🐶 PetBot","Đã bắt đầu cuộc trò chuyện mới. Bạn cứ nhắn điều bạn muốn chia sẻ nhé! 💬");
+      $("userText").focus();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Súp – Giao diện sáng / tối + PSI</title>
+
+  <!-- model-viewer -->
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
+  <!-- TensorFlow + Teachable Machine (Ảnh & Âm thanh) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio@0.8/dist/teachablemachine-audio.min.js"></script>
+
+  <!-- XLSX -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    html, body { width:100%; height:100%; overflow-x:hidden; transition:background .5s ease; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+
+    :root {
+      --sky: url('TaiNguyen/BackGroundSang.png');
+      --grass: url('TaiNguyen/NenCoSang.png');
+      --nav:#CDECFF;
+      --shadow1:#A5C2E9;
+      --shadow2:#90B0C4;
+      --user:#69B9E7;
+      --brand:#4B6BAD;
+      --page:#FFFFFF;
+      --text:#1e293b;
+      --panel:#ffffff;
+      --border:#dbeafe;
+      --good:#16a34a;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --great:#2563eb;
+    }
+    body.dark {
+      --sky: url('TaiNguyen/BackGroundToi.png');
+      --grass: url('TaiNguyen/NenCoToi.png');
+      --nav:#4D50A6;
+      --shadow1:#26264F;
+      --shadow2:#90B0C4;
+      --user:#6F77CC;
+      --brand:#4B6BAD;
+      --page:#0C0B3E;
+      --text:#E6E9FF;
+      --panel:#1A1B4D;
+      --border:#3D4CA0;
+    }
+
+    body {
+      font-family:'Poppins',sans-serif;
+      color:var(--text);
+      background:var(--page);
+      display:flex; flex-direction:column;
+      min-height:100vh; transition:all .4s ease;
+    }
+
+    /* Header */
+    header{
+      height:80px;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 60px;
+      background:var(--nav);
+      border-bottom:1px solid var(--shadow2);
+      box-shadow:0 6px 18px var(--shadow1);
+      transition:all .4s ease;
+    }
+    .logo{ font-weight:700; font-size:40px; color:var(--brand); transition:color .4s ease; }
+    body.dark .logo{ color:var(--text); }
+    nav a{
+      margin-left:25px; text-decoration:none; font-weight:600; font-size:20px;
+      color:var(--text); padding:6px 14px; border-radius:999px; transition:all .25s ease;
+    }
+    nav a:hover{ background:var(--shadow1); color:#fff; }
+    nav a.active{ background:#fff; color:var(--brand); box-shadow:0 0 0 3px var(--shadow2) inset; }
+
+    /* Main + nền parallax */
+    .main{
+      flex:1; display:flex; align-items:flex-end; justify-content:center;
+      position:relative; width:100%;
+      overflow:hidden; padding:40px 80px; transition:background 1s ease;
+
+      background-image: var(--sky), var(--sky);
+      background-repeat: repeat-x, repeat-x;
+      background-size: 2000px auto, 2000px auto;
+      background-position: 0px -150px, 2000px -150px;
+      animation: skyLoop 200s linear infinite;
+    }
+    @keyframes skyLoop{
+      from{ background-position: 0px -150px, 2000px -150px; }
+      to  { background-position:-2000px -150px, 0px   -150px; }
+    }
+    .main::after{
+      content:""; position:absolute; bottom:0; left:0; right:0;
+      width:75%; height:95%;
+      background: var(--grass) no-repeat center bottom;
+      background-size: cover; z-index:1; transform:translateY(100px);
+      transition:background 1s ease;
+    }
+
+    .container{
+      position:relative; z-index:2;
+      display:grid; grid-template-columns: 1fr 0.9fr 1.1fr;
+      align-items:end; justify-items:center; gap:20px; width:94%; margin:0 auto;
+    }
+
+    /* Pet */
+    .pet-area{ position:relative; display:flex; align-items:flex-end; justify-content:center; height:1000px; }
+    model-viewer{
+      width:min(600px,50vw); height:min(600px,50vw);
+      background:transparent; --poster-color:transparent;
+      filter:drop-shadow(0 8px 18px rgba(0,0,0,.15));
+      transform: translate(100px, -100px);
+      transition: all .3s ease;
+    }
+
+    /* Camera + Mic */
+    .ai-controls{
+      display:flex; flex-direction:column; align-items:center; gap:18px;
+      background:var(--panel); border:1px solid var(--border); border-radius:20px; padding:20px;
+      box-shadow:0 8px 20px var(--shadow1);
+      transform: translateY(-60px);
+      width:280px;
+    }
+    .ai-controls video{ border-radius:16px; box-shadow:0 4px 12px rgba(0,0,0,.25); }
+    .ai-controls .btns{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+    .ai-controls button{
+      border:none; padding:8px 14px; border-radius:10px;
+      background:linear-gradient(90deg, var(--user), var(--brand)); color:#fff; font-weight:600; cursor:pointer;
+      box-shadow:0 6px 14px rgba(0,0,0,.2); transition:transform .2s ease;
+    }
+    .ai-controls button:hover{ transform:scale(1.05); }
+    .emotion-status{ font-weight:600; color:var(--brand); font-size:15px; text-align:center; }
+
+    /* Chat */
+    .chat-box{
+      background:var(--panel); border:1px solid var(--border); border-radius:40px;
+      box-shadow:0 8px 20px var(--shadow1);
+      display:flex; flex-direction:column; height:620px; width:520px; max-width:90vw;
+      position:relative; overflow:hidden; transform: translateX(-40px) translateY(-90px);
+      transition: all .4s ease;
+    }
+    .chat-header{
+      background:var(--nav); padding:18px 22px; font-weight:700; font-size:22px; color:var(--brand);
+      border-bottom:1px solid var(--shadow2); text-align:center; transition:all .3s ease;
+      display:flex; align-items:center; justify-content:center; gap:10px;
+    }
+    body.dark .chat-header{ color:var(--text); }
+    .chat-body{ flex:1; padding:20px; overflow:auto; background:transparent; }
+    .msg{
+      max-width:75%; margin:8px 0; padding:12px 14px; border-radius:50px; border:1px solid var(--border);
+      position:relative; word-wrap:break-word; white-space:pre-wrap; transition: all .3s ease;
+    }
+    .msg.bot{ background:var(--panel); color:var(--text); border-color:var(--brand); }
+    .msg.user{ background:var(--user); color:#fff; margin-left:auto; }
+    .msg.bot::before{
+      content:""; position:absolute; left:-8px; top:10px;
+      border-right:8px solid var(--panel); border-top:8px solid transparent; border-bottom:8px solid transparent;
+    }
+    .msg.user::before{
+      content:""; position:absolute; right:-8px; top:10px;
+      border-left:8px solid var(--user); border-top:8px solid transparent; border-bottom:8px solid transparent;
+    }
+
+    .chat-footer{
+      padding:14px 16px; border-top:1px solid var(--border); background:var(--nav);
+      display:flex; align-items:center; gap:10px; transition:all .3s ease;
+    }
+    .mic{
+      width:48px; height:48px; border-radius:30px; border:1px solid var(--border);
+      background:var(--panel); display:grid; place-items:center; cursor:pointer; box-shadow:0 6px 14px var(--shadow1);
+      position:relative; overflow:hidden; transition:transform .2s ease, box-shadow .2s ease;
+    }
+    .mic svg{ width:22px; height:22px; color:var(--brand); }
+    .mic.listening{ transform: scale(1.06); box-shadow: 0 0 0 3px rgba(75,107,173,.2), 0 0 18px rgba(75,107,173,.45); }
+    .mic.listening::after{
+      content:""; position:absolute; inset:0; border-radius:30px; animation:pulse 1.2s ease-out infinite; border:2px solid rgba(75,107,173,.45);
+    }
+    @keyframes pulse{ 0%{ transform:scale(1); opacity:.9; } 100%{ transform:scale(1.35); opacity:0; } }
+
+    body.dark .chat-footer{ background:transparent; border-top:none; gap:12px; padding:18px 20px; }
+    body.dark .mic{ border:none; background:radial-gradient(circle at 30% 30%, #AFC3FF, #3B4B8E 70%); box-shadow:0 0 10px rgba(112,142,255,.6), 0 0 25px rgba(112,142,255,.3); }
+    body.dark .mic.listening{ box-shadow:0 0 18px rgba(157,184,255,.9), 0 0 34px rgba(157,184,255,.5); }
+    body.dark .mic svg{ color:#fff; opacity:.9; }
+
+    .input-wrap{
+      flex:1; display:flex; align-items:center; gap:10px;
+      background:var(--panel); border:1px solid var(--border); border-radius:30px; padding:8px 10px;
+    }
+    .input-wrap input{ flex:1; border:none; outline:none; font-size:15px; padding:6px 8px; color:var(--text); background:transparent; }
+    .send{
+      border:none; border-radius:12px; background:linear-gradient(90deg,var(--user),var(--brand));
+      color:#fff; padding:10px 18px; font-weight:600; cursor:pointer;
+      box-shadow:0 6px 14px rgba(79,70,229,.25); transition:all .3s ease;
+    }
+    .end{
+      border:none; border-radius:12px; background:linear-gradient(90deg,var(--warn),var(--brand));
+      color:#fff; padding:10px 14px; font-weight:700; cursor:pointer; box-shadow:0 6px 14px rgba(79,70,229,.25);
+    }
+
+    @media (max-width:1000px){
+      .main::after{ width:100%; }
+      .container{ grid-template-columns:1fr; }
+      .pet-area{ height:460px; }
+      .chat-box{ width:100%; transform:none; }
+    }
+
+    /* PSI panel */
+    .psi-fab{
+      position:fixed; right:24px; bottom:24px; z-index:50;
+      background:linear-gradient(90deg,var(--user),var(--brand)); color:#fff; border:none;
+      padding:12px 16px; border-radius:999px; font-weight:700; cursor:pointer;
+      box-shadow:0 8px 20px rgba(0,0,0,.25);
+    }
+    .modal{ position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:60; }
+    .modal.show{ display:flex; }
+    .panel{
+      width:min(920px,92vw); background:var(--panel); color:var(--text);
+      border:1px solid var(--border); border-radius:18px; padding:18px; box-shadow:0 14px 40px rgba(0,0,0,.35);
+      max-height:88vh; overflow:auto;
+    }
+    .panel h3{ margin-bottom:8px; color:var(--brand); }
+    .grid{ display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr; gap:10px; }
+    .grid > div{ background:rgba(0,0,0,.02); border:1px dashed var(--border); border-radius:10px; padding:10px; }
+    .kpi{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:8px; }
+    .kpi input{ width:100%; padding:8px; border:1px solid var(--border); border-radius:8px; background:transparent; color:inherit; }
+    .row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .badge{ padding:6px 10px; border-radius:999px; font-weight:700; }
+    .b-good{ background:rgba(22,163,74,.15); color:var(--good); }
+    .b-warn{ background:rgba(245,158,11,.15); color:var(--warn); }
+    .b-bad{  background:rgba(239,68,68,.15); color:var(--bad); }
+    .b-great{background:rgba(37,99,235,.15); color:var(--great); }
+    .bar{ height:12px; border-radius:999px; background:#e5e7eb; overflow:hidden; }
+    .bar > span{ display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--bad),var(--warn),var(--good),var(--great)); transition:width .4s ease; }
+
+    .panel table{ width:100%; border-collapse:collapse; margin-top:10px; }
+    .panel th, .panel td{ border:1px solid var(--border); padding:8px; text-align:center; }
+    .panel th{ background:rgba(0,0,0,.04); }
+
+    .panel .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }
+    .panel button{ padding:8px 12px; border:none; border-radius:10px; cursor:pointer; font-weight:700; }
+    .btn-close{ background:#e5e7eb; }
+    .btn-recalc{ background:linear-gradient(90deg,var(--user),var(--brand)); color:#fff; }
+    .btn-excel{ background:linear-gradient(90deg,var(--good),var(--brand)); color:#fff; }
+
+    /* Confirm modal (khung vuông giữa màn hình) */
+    /* Notify modal (thông báo OK/lỗi, đặt giữa màn hình) */
+    .notify-modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:90}
+    .notify-modal.show{display:flex}
+    .notify-card{width:min(520px,92vw);background:var(--panel);color:var(--text);
+      border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 14px 40px rgba(0,0,0,.35);text-align:center}
+    .notify-card .icon{width:48px;height:48px;border-radius:999px;display:grid;place-items:center;margin:0 auto 10px;font-size:22px}
+    .n-ok .icon{background:rgba(22,163,74,.12);color:var(--good)}
+    .n-err .icon{background:rgba(239,68,68,.12);color:var(--bad)}
+    .notify-card h4{margin:0 0 6px;font-size:18px}
+    .notify-card p{margin:0 0 12px;color:#64748bcc}
+    .notify-card .row{display:flex;gap:10px;justify-content:center}
+    .btnX.ok{background:linear-gradient(90deg,var(--user),var(--brand));color:#fff}
+
+    .confirm-modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:80}
+    .confirm-modal.show{display:flex}
+    .confirm-card{width:min(520px,92vw);background:var(--panel);color:var(--text);
+      border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 14px 40px rgba(0,0,0,.35)}
+    .confirm-card h4{margin:0 0 6px;font-size:18px}
+    .confirm-card p.muted{margin:0 0 10px;color:#64748bcc}
+    .confirm-card .info{background:rgba(0,0,0,.03);border:1px dashed var(--border);border-radius:12px;padding:10px;margin-top:6px;font-size:14px}
+    .confirm-card .row{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+    .btnX{padding:10px 14px;border:none;border-radius:10px;font-weight:700;cursor:pointer}
+    .btnX.cancel{background:#e5e7eb}
+    .btnX.primary{background:linear-gradient(90deg,var(--user),var(--brand));color:#fff}
+    
+  </style>
+</head>
+    <!-- Notify modal (thông báo đẹp ở giữa) -->
+    <div id="notifyModal" class="notify-modal" aria-hidden="true">
+      <div id="notifyCard" class="notify-card n-err">
+        <div class="icon">⚠️</div>
+        <h4 id="notifyTitle">Thông báo</h4>
+        <p id="notifyMsg">—</p>
+        <div class="row">
+          <button id="notifyOk" class="btnX ok">OK</button>
+        </div>
+      </div>
+    </div>
+
+<body>
+  <!-- Hộp thoại xác nhận gửi báo cáo (ở giữa màn) -->
+  <div id="confirmModal" class="confirm-modal" aria-hidden="true">
+    <div class="confirm-card">
+      <h4>📩 Học sinh có muốn nhờ thêm sự hỗ trợ từ nhân viên tâm lý không?</h4>
+      <p class="muted">Nếu đồng ý, hệ thống sẽ xuất Excel và gửi qua email nhân viên tham vấn.</p>
+      <div class="info">
+        <b>Họ tên:</b> <span id="uName">—</span> •
+        <b>Lớp:</b> <span id="uClass">—</span> •
+        <b>Trường:</b> <span id="uSchool">—</span>
+      </div>
+      <div class="row">
+        <button id="btnCancelBack" class="btnX cancel">Không, quay về</button>
+        <button id="btnSendMail"  class="btnX primary">Gửi báo cáo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">🐶 Súp AI Pet</div>
+    <nav>
+      <a href="#" class="active">Home</a>
+      <a href="AboutUs.html" class="nav-link">About us</a>
+      <a href="#" id="modeToggle">Mode</a>
+    </nav>
+  </header>
+
+  <!-- Main -->
+  <section class="main">
+    <div class="container">
+      <!-- PET -->
+      <div class="pet-area">
+        <model-viewer src="supnheomatmomieng.glb" autoplay auto-rotate camera-controls disable-zoom></model-viewer>
+      </div>
+
+      <!-- CAMERA + NHẬN DIỆN -->
+      <div class="ai-controls">
+        <video id="preview" autoplay playsinline muted width="240" height="180"></video>
+        <div class="btns">
+          <button id="startCamBtn">🎥 Bật camera</button>
+          <button id="stopCamBtn">⏹️ Tắt camera</button>
+        </div>
+        <div class="emotion-status">
+          Ảnh: <span id="emotion">–</span> |
+          Giọng: <span id="voiceEmotion">–</span> |
+          Tổng hợp: <span id="finalEmotion">–</span>
+        </div>
+      </div>
+
+      <!-- CHAT -->
+      <div class="chat-box">
+        <div class="chat-header"><span>Trò chuyện với Súp</span></div>
+        <div id="chatBody" class="chat-body">
+          <div class="msg bot">Xin chào 👋 Mình là Súp!</div>
+        </div>
+        <div class="chat-footer">
+          <div class="mic" id="sttMic" title="Nhấn để nói / Nhấn lần nữa để gửi">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z"/>
+              <path d="M19 11a7 7 0 0 1-14 0"/>
+              <path d="M12 18v3"/>
+            </svg>
+          </div>
+          <div class="input-wrap">
+            <input id="msgInput" type="text" placeholder="Nhấn mic để nói..." />
+            <button id="sendBtn" class="send">Gửi</button>
+            <button id="endBtn" class="end" title="Kết thúc phiên và phân tích">Kết thúc</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Nút mở bảng phân tích PSI -->
+  <button id="psiFab" class="psi-fab">🔎 Phân tích Tâm lý</button>
+
+  <!-- MODAL PHÂN TÍCH PSI -->
+  <div id="psiModal" class="modal" aria-hidden="true">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;">
+        <h3>🧠 Phân tích PSI (Psychological State Index)</h3>
+        <div class="row">
+          <label class="row" style="gap:6px;"><input type="radio" name="modelSel" value="A" checked> Mô hình A (Chat + Face)</label>
+          <label class="row" style="gap:6px;"><input type="radio" name="modelSel" value="B"> Mô hình B (Voice + Face)</label>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:10px;">
+        <div>
+          <b>Chat</b>
+          <div class="kpi">
+            <div><small>E_chat</small><input id="E_chat" type="number" min="0" max="100" value="0"></div>
+            <div><small>C_chat</small><input id="C_chat" type="number" min="0" max="100" value="0"></div>
+            <div><small>B_chat</small><input id="B_chat" type="number" min="0" max="100" value="0"></div>
+          </div>
+        </div>
+        <div>
+          <b>Voice</b>
+          <div class="kpi">
+            <div><small>E_voice</small><input id="E_voice" type="number" min="0" max="100" value="0"></div>
+            <div><small>C_voice</small><input id="C_voice" type="number" min="0" max="100" value="0"></div>
+            <div><small>B_voice</small><input id="B_voice" type="number" min="0" max="100" value="0"></div>
+          </div>
+        </div>
+        <div>
+          <b>Face</b>
+          <div class="kpi">
+            <div><small>E_face</small><input id="E_face" type="number" min="0" max="100" value="0"></div>
+            <div><small>C_face</small><input id="C_face" type="number" min="0" max="100" value="50"></div>
+            <div><small>B_face</small><input id="B_face" type="number" min="0" max="100" value="50"></div>
+          </div>
+        </div>
+        <div>
+          <b>Tổng hợp</b>
+          <div class="kpi">
+            <div><small>E</small><input id="E_total" type="number" min="0" max="100" value="0" readonly></div>
+            <div><small>C</small><input id="C_total" type="number" min="0" max="100" value="0" readonly></div>
+            <div><small>B</small><input id="B_total" type="number" min="0" max="100" value="0" readonly></div>
+          </div>
+          <div style="margin-top:10px;">
+            <div class="row" style="justify-content:space-between;">
+              <b>PSI</b><b id="psiVal">0</b>
+            </div>
+            <div class="bar"><span id="psiBar"></span></div>
+            <div id="psiBadge" class="badge b-warn" style="margin-top:8px;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr><th>Nguồn dữ liệu</th><th>E</th><th>C</th><th>B</th><th>Ghi chú</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Chat</td><td id="tE_chat">0</td><td id="tC_chat">0</td><td id="tB_chat">0</td><td id="nChat">—</td></tr>
+          <tr><td>Voice</td><td id="tE_voice">0</td><td id="tC_voice">0</td><td id="tB_voice">0</td><td id="nVoice">—</td></tr>
+          <tr><td>Face</td><td id="tE_face">0</td><td id="tC_face">50</td><td id="tB_face">50</td><td id="nFace">—</td></tr>
+          <tr><td><b>Tổng hợp</b></td><td id="tE_total"><b>0</b></td><td id="tC_total"><b>0</b></td><td id="tB_total"><b>0</b></td><td id="nTotal">—</td></tr>
+        </tbody>
+      </table>
+
+      <div class="actions">
+        <button class="btn-excel" id="btnExcelTop">Xuất Excel</button>
+        <button class="btn-recalc" id="btnRecalc">Tính lại</button>
+        <button class="btn-close" id="btnClose">Đóng</button>
+        <button class="btn-close" id="btnSamples">Xem dữ liệu thu thập</button>
+      </div>
+
+      <div id="samplesPanel" style="display:none; margin-top:12px;">
+        <div class="row" style="justify-content:space-between; margin-bottom:6px;">
+          <h4>🧪 Mẫu theo thời gian (mỗi 1s)</h4>
+          <div class="row" style="gap:8px;">
+            <button class="btn-excel" id="btnExcelSamples">Xuất Excel</button>
+            <button class="btn-close" id="btnCloseSamples">Ẩn</button>
+          </div>
+        </div>
+        <div style="max-height:260px; overflow:auto; border:1px solid var(--border); border-radius:10px;">
+          <table id="samplesTable" style="width:100%; border-collapse:collapse;"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* =========================
+       0) Cấu hình chung
+    ========================= */
+    const TEACHER_EMAIL = "giaovientamly@truong.edu.vn"; // đổi nếu cần
+    const USE_PROXY      = false;
+    const PROXY_URL      = "http://localhost:8080/proxy/generate";
+    const GEMINI_API_KEY = "AIzaSyDH2LC1KP9bJKTbIXy2ysxYFZwADxWD4mg";
+    const GEMINI_MODEL   = "gemini-2.0-flash";
+    const geminiEndpoint = () => USE_PROXY
+      ? PROXY_URL
+      : `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+    /* =========================
+       1) Đọc thông tin học sinh
+    ========================= */
+    const USER = { name:"", cls:"", school:"" };
+    (function loadUser(){
+      try{
+        const raw = sessionStorage.getItem('userInfo') || localStorage.getItem('userInfo');
+        if(raw){
+          const u = JSON.parse(raw);
+          USER.name   = u?.name   || "";
+          USER.cls    = u?.cls    || "";
+          USER.school = u?.school || "";
+        }
+      }catch{}
+      // Hiển thị sẵn trên modal
+      document.getElementById('uName').textContent   = USER.name || '—';
+      document.getElementById('uClass').textContent  = USER.cls || '—';
+      document.getElementById('uSchool').textContent = USER.school || '—';
+    })();
+
+    /* =========================
+       2) Dark / Light mode
+    ========================= */
+    const modeBtn = document.getElementById("modeToggle");
+    modeBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      document.body.classList.toggle("dark");
+      modeBtn.textContent = document.body.classList.contains("dark") ? "Light Mode" : "Dark Mode";
+    });
+
+    /* =========================
+       3) Chat + TTS
+    ========================= */
+    const chatBody = document.getElementById('chatBody');
+    const input    = document.getElementById('msgInput');
+    const sendBtn  = document.getElementById('sendBtn');
+    const endBtn   = document.getElementById('endBtn');
+
+    function addMsg(text, who='bot'){
+      const div = document.createElement('div');
+      div.className = 'msg ' + (who === 'user' ? 'user' : 'bot');
+      div.textContent = text;
+      chatBody.appendChild(div);
+      chatBody.scrollTop = chatBody.scrollHeight;
+      if(who==='user'){ state.chat.messages.push({t:Date.now(), text}); }
+      return div;
+    }
+
+    function ensureCollectionStarted(){ if(!collect.running) startCollection(); }
+
+    async function sendMessage(){
+      const val = input.value.trim();
+      if(!val) return;
+      ensureCollectionStarted();
+      addMsg(val, 'user');
+      input.value='';
+      const thinking = addMsg('⏳ Đang nghĩ...', 'bot');
+
+      const sys =
+`Bạn là Súp – thú cưng dễ thương biết nói chuyện.
+Vai trò: an ủi và hỗ trợ tinh thần cơ bản (KHÔNG chẩn đoán y tế).
+Quy tắc:
+1) Viết ngắn 2–3 câu, giọng ấm áp với emoji 🐶💖✨.
+2) Công nhận cảm xúc trước, rồi động viên tích cực.
+3) Gợi ý một hành động nhỏ an toàn (hít thở, nghỉ ngơi…).
+4) Không đưa lời khuyên y tế phức tạp.
+5) Nếu có dấu hiệu tự hại rõ ràng → "Mình rất lo cho bạn 🥺, mình đã nhờ thầy cô và người lớn hỗ trợ thêm cho bạn ngay nhé."
+6) Nếu là thành ngữ kiểu "mệt muốn chết" thì coi là cách nói thường, đừng kích hoạt cảnh báo.
+Nếu không chắc chắn về ý định, hỏi nhẹ và đề nghị hỗ trợ từ người lớn.`;
+
+      try{
+        const res  = await fetch(geminiEndpoint(), {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: sys + "\n\nNgười dùng: " + val }] }] })
+        });
+        const raw = await res.text();
+        if(!res.ok){ thinking.textContent = `⚠️ Lỗi HTTP ${res.status}`; console.warn("Gemini error:", raw); return; }
+        let data; try{ data = JSON.parse(raw); } catch{ thinking.textContent = "⚠️ Phản hồi không hợp lệ."; return; }
+        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Mình chưa nghe rõ, bạn nói lại nhé 🐶";
+        thinking.textContent = reply;
+        const u = new SpeechSynthesisUtterance(reply); u.lang = "vi-VN"; window.speechSynthesis.speak(u);
+      }catch(err){ console.error(err); thinking.textContent = "⚠️ Không thể kết nối đến Gemini."; }
+    }
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') sendBtn.click(); });
+
+    /* =========================
+       4) STT (Mic)
+    ========================= */
+    const micBtn = document.getElementById('sttMic');
+    let rec = null, recActive = false;
+    let sttFinal = "", sttInterim = "";
+
+    function initSTT(){
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if(!SR){ alert("Trình duyệt không hỗ trợ nói để nhập (SpeechRecognition)."); return null; }
+      const r = new SR();
+      r.lang = "vi-VN"; r.interimResults = true; r.continuous = true;
+
+      r.onstart = async ()=>{
+        recActive = true; sttFinal = ""; sttInterim = "";
+        micBtn.classList.add('listening');
+        input.placeholder = "Đang nghe... nói đi nhé!";
+        ensureCollectionStarted();
+        if (!audioModel) { await initAudioModel(); } else { await startAudioEmotion(); }
+      };
+      r.onresult = (ev)=>{
+        sttInterim = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const chunk = ev.results[i][0].transcript;
+          if (ev.results[i].isFinal) sttFinal += chunk + " ";
+          else sttInterim += chunk;
+        }
+        input.value = (sttFinal + sttInterim).trim();
+      };
+      r.onerror = ()=>{ recActive = false; micBtn.classList.remove('listening'); input.placeholder = "Nhấn mic để nói..."; };
+      r.onend = async ()=>{ await stopAudioEmotion(); micBtn.classList.remove('listening'); recActive = false; input.placeholder = "Nhấn mic để nói..."; const toSend = (input.value || "").trim(); if(toSend) { await sendMessage(); } };
+      return r;
+    }
+    micBtn.addEventListener('click', ()=>{
+      if(!rec) rec = initSTT(); if(!rec) return;
+      try{ recActive ? rec.stop() : rec.start(); }catch(e){ console.warn(e); }
+    });
+
+    /* =========================
+       5) Teachable Machine
+    ========================= */
+    let imageModel, audioModel, webcam;
+    const IMAGE_MODEL_URL = "./NhanDienCamXuc/";
+    const AUDIO_MODEL_URL = "./NhanDienAmThanh/";
+    function updateFinalEmotion(){
+      const img = document.getElementById('emotion').textContent || "UNKNOWN";
+      const voice = document.getElementById('voiceEmotion').textContent || "UNKNOWN";
+      const final = (voice && voice!=="UNKNOWN") ? voice : img;
+      document.getElementById('finalEmotion').textContent = final;
+    }
+    function normalizeVoiceLabel(label){
+      const up = (label || "").toUpperCase().normalize("NFD").replace(/\p{Diacritic}/gu,"");
+      if (up.includes("VUI") || up.includes("HAPPY") || up.includes("JOY")) return "HAPPY";
+      if (up.includes("BUON") || up.includes("SAD") || up.includes("TRAM")) return "SAD";
+      if (up.includes("GIAN") || up.includes("ANGRY") || up.includes("TUC")) return "ANGRY";
+      if (up.includes("NEUTRAL") || up.includes("BINH") || up.includes("BT")) return "NEUTRAL";
+      if (up.includes("SILENCE") || up.includes("NOISE") || up.includes("BACKGROUND")) return "UNKNOWN";
+      return "UNKNOWN";
+    }
+
+    async function predictImage(){
+      if(!imageModel || !webcam) return;
+      try{
+        const pred = await imageModel.predict(webcam.canvas);
+        if(!pred?.length) return;
+        const best = pred.reduce((a,b)=> a.probability>b.probability ? a : b);
+        state.face.lastLabel = best.className || "UNKNOWN";
+        state.face.lastProb  = best.probability || 0;
+        document.getElementById('emotion').textContent = state.face.lastLabel;
+        updateFinalEmotion();
+      }catch(e){ console.warn("predictImage error", e); }
+    }
+
+    async function initImageModel(){
+      try{ imageModel = await tmImage.load(IMAGE_MODEL_URL + "model.json", IMAGE_MODEL_URL + "metadata.json"); await startCam(); }
+      catch(e){ console.error("❌ Không tải được model ảnh:", e); alert("Không tải được model ảnh. Kiểm tra NhanDienCamXuc/"); }
+    }
+    async function startCam(){
+      try{
+        const stream = await navigator.mediaDevices.getUserMedia({ video:true });
+        document.getElementById('preview').srcObject = stream;
+        webcam = new tmImage.Webcam(200, 200, true);
+        await webcam.setup({ facingMode:"user" }); await webcam.play();
+        const loopPredict = async () => { webcam.update(); await predictImage(); requestAnimationFrame(loopPredict); };
+        loopPredict();
+      }catch(err){ console.error("❌ Không thể bật camera:", err); alert("Không thể bật camera. Hãy chạy trên https hoặc http://localhost và cho phép quyền."); }
+    }
+
+    async function initAudioModel(){
+      try{
+        await navigator.mediaDevices.getUserMedia({ audio:true });
+        const base = AUDIO_MODEL_URL.endsWith('/') ? AUDIO_MODEL_URL : (AUDIO_MODEL_URL + '/');
+        audioModel = await tmAudio.create(base + "model.json", base + "metadata.json");
+        await startAudioEmotion();
+      }catch(e){ console.error("❌ Không tải được model âm thanh:", e); alert("Chưa có model âm thanh hoặc chưa cấp quyền micro. Kiểm tra NhanDienAmThanh/"); }
+    }
+    async function startAudioEmotion(){
+      if(!audioModel) return;
+      try{
+        try{ await audioModel.stopListening(); }catch{}
+        await audioModel.listen(preds => {
+          if(!preds?.length) return;
+          const best = preds.reduce((a,b)=> a.probability>b.probability ? a : b);
+          const rawLabel = best.className || "UNKNOWN";
+          const norm = normalizeVoiceLabel(rawLabel);
+          state.voice.lastLabel = (norm !== "UNKNOWN") ? norm : rawLabel;
+          state.voice.lastProb  = best.probability || 0;
+          document.getElementById('voiceEmotion').textContent = state.voice.lastLabel;
+          updateFinalEmotion();
+        }, { includeSpectrogram: false, overlapFactor: 0.5, probabilityThreshold: 0.4 });
+      }catch(err){ console.error("❌ Lỗi bật mic (audio emotion):", err); }
+    }
+    async function stopAudioEmotion(){ try { await audioModel?.stopListening(); } catch(e) { console.warn("Không thể dừng audioModel:", e); } }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("startCamBtn").onclick = initImageModel;
+      document.getElementById("stopCamBtn").onclick  = () => location.reload();
+    });
+
+    /* =========================
+       6) State + tính điểm
+    ========================= */
+    const state = {
+      sessionId: () => new Date().toISOString().replace(/[:.]/g,'-'),
+      model: 'A',
+      chat: { messages: [] },
+      voice: { lastLabel: 'UNKNOWN', lastProb: 0 },
+      face:  { lastLabel: 'UNKNOWN', lastProb: 0 }
+    };
+    function emotionScore(label){
+      const L = (label||'').toUpperCase();
+      if (L.includes('HAPPY') || L.includes('VUI')) return 85;
+      if (L.includes('NEUTRAL') || L.includes('BINH')) return 60;
+      if (L.includes('SAD') || L.includes('BUON') || L.includes('TRAM')) return 30;
+      if (L.includes('ANGRY') || L.includes('GIẬN') || L.includes('TỨC')) return 20;
+      return 50;
+    }
+    function analyzeChat(){
+      const msgs = state.chat.messages.slice(-10);
+      const txt  = msgs.map(m=>m.text.toLowerCase()).join(' ');
+      const pos = ['vui','hạnh phúc','tuyệt','ổn','yên tâm','cảm ơn','thích','tốt','ok','yêu đời'];
+      const neg = ['buồn','chán','mệt','lo','sợ','giận','tức','khóc','cô đơn','tệ','stress'];
+      let p=0,n=0; pos.forEach(w=>{ p += (txt.match(new RegExp('\\b'+w+'\\b','g'))||[]).length; });
+      neg.forEach(w=>{ n += (txt.match(new RegExp('\\b'+w+'\\b','g'))||[]).length; });
+      let e = 50 + (p - n)*10; e = Math.max(0, Math.min(100, e));
+      const tokens = txt.split(/\s+/).filter(Boolean);
+      const avgLen = tokens.length ? Math.min(25, Math.round(tokens.length/Math.max(1,msgs.length))) : 0;
+      let c = 40 + avgLen*2; c = Math.max(0, Math.min(100, c));
+      let b = Math.min(100, msgs.length*12 + 20);
+      return {E:e, C:c, B:b, note:`${msgs.length} tin nhắn | +${p}/-${n} từ cảm xúc`};
+    }
+    function analyzeVoice(){
+      const label = state.voice.lastLabel; const prob  = state.voice.lastProb;
+      const E = Math.round(emotionScore(label));
+      const C = Math.round(30 + prob*70);
+      const B = Math.round(30 + prob*70);
+      return {E, C, B, note:`${label} (p≈${(prob*100|0)}%)`};
+    }
+    function analyzeFace(){
+      const label = state.face.lastLabel; const prob  = state.face.lastProb;
+      const E = Math.round(emotionScore(label) * (0.6 + 0.4*prob));
+      const C = 50, B = 50;
+      const note = (prob < 0.2) ? `không nhận diện (p≈${(prob*100|0)}%)` : `${label} (p≈${(prob*100|0)}%)`;
+      return {E, C, B, note};
+    }
+    function combineByModel(model, source){
+      const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
+      let E,C,B;
+      if(model === 'A'){ E = 0.6*source.chat.E + 0.4*source.face.E; C = 0.7*source.chat.C + 0.3*source.face.C; B = 0.65*source.chat.B + 0.35*source.face.B; }
+      else{ E = 0.6*source.voice.E + 0.4*source.face.E; C = 0.6*source.voice.C + 0.4*source.face.C; B = 0.6*source.voice.B + 0.4*source.face.B; }
+      return {E:clamp(E), C:clamp(C), B:clamp(B)};
+    }
+    function PSI(E,C,B, weighted=true){ const psi = weighted ? (0.4*E + 0.3*C + 0.3*B) : ((E+C+B)/3); return Math.round(psi); }
+    function classifyPSI(psi){
+      if(psi<=40) return {text:"Bất ổn / cần can thiệp", cls:"b-bad"};
+      if(psi<=60) return {text:"Dao động / cần theo dõi", cls:"b-warn"};
+      if(psi<=80) return {text:"Ổn định", cls:"b-good"};
+      return {text:"Rất tích cực", cls:"b-great"};
+    }
+
+    /* =========================
+       7) Thu thập + phân đoạn
+    ========================= */
+    const SEG_SECONDS = 30;
+    const SESSION_MAX_SEC = 7 * 60;
+    const SAMPLE_EVERY_MS = 1000;
+    const EMA_ALPHA = 0.4;
+
+    const collect = {
+      startedAt: null, sampleTimer: null, segmentTimer: null,
+      elapsedSec: 0, samples: [], segments: [], ema: {E:null,C:null,B:null}, running: false
+    };
+
+    function reliabilityForModel(model, chatNote, voiceProb, faceProb){
+      const now = Date.now();
+      const recentMsgs = state.chat.messages.filter(m => now - m.t <= SEG_SECONDS*1000).length;
+      const chatRel = Math.min(1, recentMsgs / 5);
+      const v = Number.isFinite(voiceProb) ? voiceProb : 0;
+      const f = Number.isFinite(faceProb)  ? faceProb  : 0;
+      if(model === 'A') return 0.6*chatRel + 0.4*f;
+      return 0.6*v + 0.4*f;
+    }
+    function instantScores(){
+      const model = state.model;
+      const chat  = analyzeChat();
+      const voice = analyzeVoice();
+      const face  = analyzeFace();
+      const total = combineByModel(model, { chat, voice, face });
+      const w = reliabilityForModel(model, chat.note, state.voice.lastProb, state.face.lastProb);
+      return { total, w, chat, voice, face };
+    }
+    function updateEMA(E, C, B){
+      const e = collect.ema;
+      e.E = (e.E==null) ? E : EMA_ALPHA*E + (1-EMA_ALPHA)*e.E;
+      e.C = (e.C==null) ? C : EMA_ALPHA*C + (1-EMA_ALPHA)*e.C;
+      e.B = (e.B==null) ? B : EMA_ALPHA*B + (1-EMA_ALPHA)*e.B;
+      return { E:Math.round(e.E), C:Math.round(e.C), B:Math.round(e.B) };
+    }
+
+    function startCollection(){
+      if(collect.running) return;
+      collect.startedAt = Date.now();
+      collect.elapsedSec = 0;
+      collect.samples = [];
+      collect.segments = [];
+      collect.ema = {E:null, C:null, B:null};
+      collect.running = true;
+
+      collect.sampleTimer = setInterval(() => {
+        collect.elapsedSec++;
+        const { total, w } = instantScores();
+        updateEMA(total.E, total.C, total.B);
+        collect.samples.push({ t: Date.now(), E: total.E, C: total.C, B: total.B, w });
+        if(collect.elapsedSec >= SESSION_MAX_SEC){ stopCollection(true); }
+      }, SAMPLE_EVERY_MS);
+
+      collect.segmentTimer = setInterval(() => { makeSegment(); }, SEG_SECONDS*1000);
+    }
+    function makeSegment(){
+      const cutoff = Date.now() - SEG_SECONDS*1000;
+      const segSamples = collect.samples.filter(s => s.t >= cutoff);
+      if(segSamples.length === 0) return;
+      const avg = (arr, key) => arr.reduce((a,b)=>a+b[key],0)/arr.length;
+      const E = Math.round(avg(segSamples,'E'));
+      const C = Math.round(avg(segSamples,'C'));
+      const B = Math.round(avg(segSamples,'B'));
+      const w = Math.min(1, avg(segSamples,'w'));
+      const idx = collect.segments.length + 1;
+      collect.segments.push({ idx, from: new Date(cutoff).toISOString(), to: new Date().toISOString(), E, C, B, w });
+    }
+    function stopCollection(opts = {}) {
+  const showPSI = (opts.showPSI !== false); // mặc định true
+  if (!collect.running) { if (showPSI) openPSI(true); return; }
+  try{ clearInterval(collect.sampleTimer); }catch{}
+  try{ clearInterval(collect.segmentTimer); }catch{}
+  makeSegment();
+  collect.running = false;
+  if (showPSI) openPSI(true);
+}
+
+    /* =========================
+       8) PSI UI + Excel
+    ========================= */
+    function openNotify({title="Thông báo", msg="—", type="err", onOk=null}={}){
+  const modal = document.getElementById('notifyModal');
+  const card  = document.getElementById('notifyCard');
+  const tEl   = document.getElementById('notifyTitle');
+  const mEl   = document.getElementById('notifyMsg');
+  const okBtn = document.getElementById('notifyOk');
+  card.classList.remove('n-ok','n-err');
+  card.classList.add(type === 'ok' ? 'n-ok' : 'n-err');
+  document.querySelector('#notifyCard .icon').textContent = (type === 'ok') ? '✅' : '⚠️';
+  tEl.textContent = title;
+  mEl.textContent = msg;
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+  okBtn.onclick = () => {
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden','true');
+    if(typeof onOk === 'function') onOk();
+  };
+}
+
+    const psiFab   = document.getElementById('psiFab');
+    const modal    = document.getElementById('psiModal');
+    const btnClose = document.getElementById('btnClose');
+    const btnRe    = document.getElementById('btnRecalc');
+
+    function setVal(id, v){ const el=document.getElementById(id); if(el) el.value = Math.round(v); }
+    function getVal(id){ const el=document.getElementById(id); return el ? Number(el.value||0) : 0; }
+    function setText(id, v){ const el=document.getElementById(id); if(el) el.textContent = v; }
+
+    function openPSI(fillFromCurrent=true){
+      let chat, voice, face;
+      if (collect.segments.length > 0){
+        const segs = collect.segments;
+        const wsum = segs.reduce((a,b)=> a + (b.w||1), 0) || 1;
+        const Ew = Math.round(segs.reduce((a,b)=> a + (b.E*(b.w||1)), 0) / wsum);
+        const Cw = Math.round(segs.reduce((a,b)=> a + (b.C*(b.w||1)), 0) / wsum);
+        const Bw = Math.round(segs.reduce((a,b)=> a + (b.B*(b.w||1)), 0) / wsum);
+        setVal('E_total', Ew); setVal('C_total', Cw); setVal('B_total', Bw);
+        setText('tE_total', Ew); setText('tC_total', Cw); setText('tB_total', Bw);
+        setText('nTotal', `Từ ${segs.length} đoạn × ${SEG_SECONDS}s | trung bình có trọng số`);
+        chat  = analyzeChat(); voice = analyzeVoice(); face  = analyzeFace();
+      } else { chat=analyzeChat(); voice=analyzeVoice(); face=analyzeFace(); }
+
+      if (fillFromCurrent){
+        setVal('E_chat', chat.E); setVal('C_chat', chat.C); setVal('B_chat', chat.B);
+        setVal('E_voice', voice.E); setVal('C_voice', voice.C); setVal('B_voice', voice.B);
+        setVal('E_face', face.E);
+        setText('nChat', chat.note); setText('nVoice', voice.note); setText('nFace', face.note);
+      }
+
+      recalcTotals();
+      modal.classList.add('show'); modal.setAttribute('aria-hidden','false');
+    }
+
+    function recalcTotals(){
+      const model = [...document.querySelectorAll('input[name="modelSel"]')].find(x=>x.checked)?.value || 'A';
+      state.model = model;
+      const src = {
+        chat:  {E:getVal('E_chat'),  C:getVal('C_chat'),  B:getVal('B_chat')},
+        voice: {E:getVal('E_voice'), C:getVal('C_voice'), B:getVal('B_voice')},
+        face:  {E:getVal('E_face'),  C:getVal('C_face'),  B:getVal('B_face')}
+      };
+
+      let Et = getVal('E_total'), Ct = getVal('C_total'), Bt = getVal('B_total');
+      if (Et===0 && Ct===0 && Bt===0){
+        const totalNow = combineByModel(model, src);
+        Et = totalNow.E; Ct = totalNow.C; Bt = totalNow.B;
+        setVal('E_total', Et); setVal('C_total', Ct); setVal('B_total', Bt);
+      }
+
+      setText('tE_chat',src.chat.E); setText('tC_chat',src.chat.C); setText('tB_chat',src.chat.B);
+      setText('tE_voice',src.voice.E); setText('tC_voice',src.voice.C); setText('tB_voice',src.voice.B);
+      setText('tE_face',src.face.E);  setText('tC_face',src.face.C);  setText('tB_face',src.face.B);
+      setText('tE_total', Et); setText('tC_total', Ct); setText('tB_total', Bt);
+
+      const psi = PSI(Et, Ct, Bt, true);
+      setText('psiVal', psi);
+      document.getElementById('psiBar').style.width = psi + '%';
+
+      const badge = document.getElementById('psiBadge');
+      const cls = classifyPSI(psi);
+      badge.className = 'badge ' + cls.cls; badge.textContent = cls.text;
+
+      if (collect.segments.length>0){ setText('nTotal', `Từ ${collect.segments.length} đoạn × ${SEG_SECONDS}s | Mô hình ${state.model} | PSI=${psi}`); }
+      else { setText('nTotal', `Mô hình ${state.model} | PSI=${psi}`); }
+    }
+    document.getElementById('btnRecalc').addEventListener('click', recalcTotals);
+    document.getElementById('btnClose').addEventListener('click', ()=>{ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); });
+    document.getElementById('psiFab').addEventListener('click', ()=> openPSI(true));
+
+    /* =========================
+       9) Hộp thoại xác nhận cuối phiên
+    ========================= */
+    const confirmModal = document.getElementById('confirmModal');
+    const btnCancelBack = document.getElementById('btnCancelBack');
+    const btnSendMail   = document.getElementById('btnSendMail');
+
+    // Bấm KẾT THÚC -> dừng thu -> tính điểm -> mở hộp thoại ở giữa
+    endBtn.addEventListener('click', () => {
+    // đảm bảo bảng PSI (nếu đang mở) sẽ ẩn đi
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden','true');
+
+    // dừng thu thập nhưng KHÔNG mở PSI
+    stopCollection({ showPSI:false });
+    recalcTotals();
+
+    // mở hộp xác nhận ở giữa
+    confirmModal.classList.add('show');
+    confirmModal.setAttribute('aria-hidden','false');
+  });
+
+
+    // Không, quay về
+    btnCancelBack.addEventListener('click', () => {
+  sessionStorage.removeItem('sessionTmp');
+  openNotify({
+    title: "Đã kết thúc phiên 🐶",
+    msg: "Hẹn gặp bạn ở lần trò chuyện tiếp theo nhé!",
+    type: "ok",
+    onOk: () => { window.location.href = "ChaoMung.html"; }
+  });
+});
+
+    // Có, gửi báo cáo Excel qua server Node.js
+    btnSendMail.addEventListener('click', async () => {
+      const summary = {
+        model: (state.model === 'A') ? 'A (Chat + Face)' : 'B (Voice + Face)',
+        startISO: collect.startedAt ? new Date(collect.startedAt).toISOString() : '',
+        durationSec: collect.elapsedSec || 0,
+        E: getVal('E_total'),
+        C: getVal('C_total'),
+        B: getVal('B_total'),
+        PSI: Number(document.getElementById('psiVal')?.textContent || 0),
+        badge: document.getElementById('psiBadge')?.textContent?.trim() || ''
+      };
+      const sources = {
+        chat:  { E:getVal('E_chat'),  C:getVal('C_chat'),  B:getVal('B_chat'),  note: document.getElementById('nChat')?.textContent || '' },
+        voice: { E:getVal('E_voice'), C:getVal('C_voice'), B:getVal('B_voice'), note: document.getElementById('nVoice')?.textContent || '' },
+        face:  { E:getVal('E_face'),  C:getVal('C_face'),  B:getVal('B_face'),  note: document.getElementById('nFace')?.textContent || '' }
+      };
+      const segments = collect.segments || [];
+      const samples  = (collect.samples || []).map((s, i) => ({
+        idx: i + 1, t: new Date(s.t).toISOString(), E: s.E, C: s.C, B: s.B, w: Number((s.w ?? 0).toFixed(3))
+      }));
+
+      try {
+        const res = await fetch("http://localhost:3000/api/send-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            student: { name: USER.name || "Ẩn danh", class: USER.cls || "Chưa rõ", school: USER.school || "—", note: "Tự động gửi từ Súp AI Pet", to: TEACHER_EMAIL },
+            summary, sources, segments, samples
+          })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "Gửi thất bại");
+          openNotify({
+            title: "Đã gửi báo cáo",
+            msg: "File Excel đã được gửi đến email nhân viên tâm lý.",
+            type: "ok",
+            onOk: () => { window.location.href = "ChaoMung.html"; }
+          });       
+           window.location.href = "ChaoMung.html";
+      } catch (e) {
+        console.error(e);
+          openNotify({
+            title: "Không gửi được email",
+            msg: "Vui lòng kiểm tra server Node.js (http://localhost:3000/api/send-report) hoặc kết nối mạng.",
+            type: "err"
+          });      }
+    });
+
+    /* =========================
+       10) Bảng mẫu 1s + Export
+    ========================= */
+    const btnSamples = document.getElementById('btnSamples');
+    const btnCloseSamples = document.getElementById('btnCloseSamples');
+    btnSamples?.addEventListener('click', () => { document.getElementById('samplesPanel').style.display = 'block'; renderSamplesTable(); });
+    btnCloseSamples?.addEventListener('click', ()=>{ document.getElementById('samplesPanel').style.display = 'none'; });
+
+    function fmtISO(ts){ return ts ? new Date(ts).toISOString() : ''; }
+    function fmtLocal(ts){ return ts ? new Date(ts).toLocaleTimeString([], {hour12:false}) : ''; }
+    function z(v){ return (v==null || Number.isNaN(v)) ? '' : v; }
+
+    function renderSamplesTable(){
+      const tb = document.getElementById('samplesTable'); if (!tb) return;
+      const rows = collect.samples.map((s,i)=>(`
+        <tr>
+          <td style="border:1px solid var(--border); padding:6px; text-align:center;">${i+1}</td>
+          <td style="border:1px solid var(--border); padding:6px; text-align:center;">${fmtLocal(s.t)}</td>
+          <td style="border:1px solid var(--border); padding:6px; text-align:center;">${s.E}</td>
+          <td style="border:1px solid var(--border); padding:6px; text-align:center;">${s.C}</td>
+          <td style="border:1px solid var(--border); padding:6px; text-align:center;">${s.B}</td>
+          <td style="border:1px solid var(--border); padding:6px; text-align:center;">${(s.w??0).toFixed(2)}</td>
+        </tr>`)).join('');
+      tb.innerHTML = `
+        <thead>
+          <tr>
+            <th style="position:sticky;top:0;background:rgba(0,0,0,.04);border:1px solid var(--border);padding:6px;">#</th>
+            <th style="position:sticky;top:0;background:rgba(0,0,0,.04);border:1px solid var(--border);padding:6px;">Thời điểm</th>
+            <th style="position:sticky;top:0;background:rgba(0,0,0,.04);border:1px solid var(--border);padding:6px;">E</th>
+            <th style="position:sticky;top:0;background:rgba(0,0,0,.04);border:1px solid var(--border);padding:6px;">C</th>
+            <th style="position:sticky;top:0;background:rgba(0,0,0,.04);border:1px solid var(--border);padding:6px;">B</th>
+            <th style="position:sticky;top:0;background:rgba(0,0,0,.04);border:1px solid var(--border);padding:6px;">w</th>
+          </tr>
+        </thead>
+        <tbody>${rows || `<tr><td colspan="6" style="border:1px solid var(--border); padding:10px; text-align:center;">Chưa có mẫu. Hãy bật mic/camera và trò chuyện nhé!</td></tr>`}</tbody>
+      `;
+    }
+
+    // Export PSI + segments (2 sheets)
+    function exportExcelTopTwoSheets(){
+      const wb = XLSX.utils.book_new();
+      const overviewAOA = [
+        ['Session ID', state.sessionId()],
+        ['Model', state.model === 'A' ? 'A (Chat + Face)' : 'B (Voice + Face)'],
+        ['Bắt đầu', fmtISO(collect.startedAt)],
+        ['Thời lượng (giây)', z(collect.elapsedSec)],
+        [],
+        ['Nguồn dữ liệu','E','C','B','Ghi chú'],
+        ['Chat',  z(getVal('E_chat')),  z(getVal('C_chat')),  z(getVal('B_chat')),  document.getElementById('nChat')?.textContent || ''],
+        ['Voice', z(getVal('E_voice')), z(getVal('C_voice')), z(getVal('B_voice')), document.getElementById('nVoice')?.textContent || ''],
+        ['Face',  z(getVal('E_face')),  z(getVal('C_face')),  z(getVal('B_face')),  document.getElementById('nFace')?.textContent || ''],
+        [],
+        ['Tổng hợp', z(getVal('E_total')), z(getVal('C_total')), z(getVal('B_total')), document.getElementById('nTotal')?.textContent || ''],
+        ['PSI', z(Number(document.getElementById('psiVal')?.textContent || 0)), '', '', document.getElementById('psiBadge')?.textContent?.trim() || '']
+      ];
+      const wsPSI = XLSX.utils.aoa_to_sheet(overviewAOA);
+      XLSX.utils.book_append_sheet(wb, wsPSI, 'PSI');
+
+      const segRows = (collect.segments||[]).map(seg => ({
+        idx: seg.idx, from_ISO: seg.from, to_ISO: seg.to,
+        E: z(seg.E), C: z(seg.C), B: z(seg.B), w: (seg.w ?? 0).toFixed(3)
+      }));
+      const wsSeg = XLSX.utils.json_to_sheet(segRows, {header:['idx','from_ISO','to_ISO','E','C','B','w']});
+      XLSX.utils.book_append_sheet(wb, wsSeg, 'Phan_doan_30s');
+
+      const fname = `PSI_${state.sessionId()}.xlsx`;
+      XLSX.writeFile(wb, fname);
+    }
+    document.getElementById('btnExcelTop')?.addEventListener('click', exportExcelTopTwoSheets);
+
+    // Export samples 1 sheet
+    function exportSamplesExcelOneSheet(){
+      if (!collect.samples.length){ alert("Chưa có dữ liệu mẫu để xuất Excel!"); return; }
+      const rows = collect.samples.map((s,i)=>({
+        STT: i+1, ISO_Time: fmtISO(s.t), Local_Time: fmtLocal(s.t),
+        E: z(s.E), C: z(s.C), B: z(s.B), w: (s.w ?? 0).toFixed(3)
+      }));
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows, {header:['STT','ISO_Time','Local_Time','E','C','B','w']});
+      XLSX.utils.book_append_sheet(wb, ws, 'Mau_1s');
+      const filename = `PSI_samples_${state.sessionId()}.xlsx`;
+      XLSX.writeFile(wb, filename);
+    }
+    document.getElementById('btnExcelSamples')?.addEventListener('click', exportSamplesExcelOneSheet);
+
+    // Khi mở/đóng PSI, auto render bảng mẫu
+    (function wireSamplesAutoRender(){
+      let timer = null;
+      const start = ()=>{ stop(); timer = setInterval(()=>{ const wrap = document.getElementById('samplesPanel'); if (wrap && wrap.style.display !== 'none') renderSamplesTable(); }, 1000); };
+      const stop  = ()=>{ if(timer){ clearInterval(timer); timer=null; } };
+      const origOpenPSI = openPSI;
+      openPSI = function(fill=true){ origOpenPSI(fill); start(); };
+      document.getElementById('btnClose')?.addEventListener('click', stop);
+    })();
+  </script>
+</body> 
+</html>

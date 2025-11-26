@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>🐶 Chó 3D Animation</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #eef; }
+    canvas { display: block; }
+  </style>
+
+  <!-- Import Map để load Three.js -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+    // Scene, camera, renderer
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xaadfff); // nền trời xanh
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({antialias: true});
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Ánh sáng
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(5, 10, 5);
+    scene.add(dirLight);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+    // Mặt đất (cỏ)
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(50, 50),
+      new THREE.MeshPhongMaterial({ color: 0x55aa55 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = 0;
+    scene.add(ground);
+
+    // Điều khiển camera
+    const controls = new OrbitControls(camera, renderer.domElement);
+    camera.position.set(0, 2, 5);
+    controls.update();
+
+    // Load mô hình chó
+    const loader = new GLTFLoader();
+    let mixer, dogModel;
+
+    loader.load("CHo.glb", function(gltf) {
+      dogModel = gltf.scene;
+      dogModel.scale.set(1.5, 1.5, 1.5);
+
+      // đặt chó đứng trên mặt đất
+      dogModel.position.set(0, 0, 0);
+      scene.add(dogModel);
+
+      // Nếu có animation → play
+      mixer = new THREE.AnimationMixer(dogModel);
+      if (gltf.animations.length > 0) {
+        const action = mixer.clipAction(gltf.animations[0]);
+        action.play();
+      } else {
+        console.warn("⚠️ Mô hình không có animation, sẽ xoay tạm");
+      }
+    },
+    undefined,
+    function(error) {
+      console.error("❌ Lỗi khi load CHo.glb:", error);
+    });
+
+    // Animation loop
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      if (mixer) {
+        mixer.update(delta); // chạy animation
+      } else if (dogModel) {
+        // Nếu không có animation → xoay nhẹ
+        dogModel.rotation.y += 0.01;
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Xử lý khi resize màn hình
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

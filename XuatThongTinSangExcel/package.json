@@ -1,0 +1,21 @@
+{
+  "name": "huanluyenai",
+  "version": "1.0.0",
+  "description": "Server gửi mail báo cáo tâm lý từ Súp AI Pet",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "Mai",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "nodemailer": "^7.0.9",
+    "xlsx": "^0.18.5"
+  }
+}

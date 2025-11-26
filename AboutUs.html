@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Súp AI Pet – About Us</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap&subset=latin-ext" rel="stylesheet">
+
+  <style>
+    html, body { width:100%; height:100%; overflow-x:hidden; }
+    *{ box-sizing:border-box; margin:0; padding:0; }
+
+    :root{
+      /* ===== Palette & nền GIỐNG GiaoDien.html ===== */
+      --sky: url('TaiNguyen/BackGroundSang.png');
+      --grass: url('TaiNguyen/NenCoSang.png');
+
+      --nav:#CDECFF;
+      --shadow1:#A5C2E9;
+      --shadow2:#90B0C4;
+      --user:#69B9E7;
+      --brand:#4B6BAD;
+      --page:#FFFFFF;
+      --text:#1e293b;
+      --panel:#ffffff;
+      --border:#dbeafe;
+    }
+
+    body.dark{
+      --sky: url('TaiNguyen/BackGroundToi.png');
+      --grass: url('TaiNguyen/NenCoToi.png');
+
+      --nav:#4D50A6;
+      --shadow1:#26264F;
+      --shadow2:#90B0C4;
+      --user:#6F77CC;
+      --brand:#4B6BAD;
+      --page:#0C0B3E;
+      --text:#E6E9FF;
+      --panel:#1A1B4D;
+      --border:#3D4CA0;
+    }
+
+    body{
+      font-family:'Poppins',sans-serif;
+      color:var(--text);
+      background:var(--page);
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+      transition:all .4s ease;
+    }
+
+    /* ===== HEADER: giống hệt GiaoDien.html ===== */
+    header{
+      height:80px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 60px;                     /* 60px như trang GiaoDien */
+      background:var(--nav);
+      border-bottom:1px solid var(--shadow2);
+      box-shadow:0 6px 18px var(--shadow1);
+      transition:all .3s ease;
+    }
+
+    .logo{ font-weight:700; font-size:40px; color:var(--brand); transition:color .3s ease; }
+    body.dark .logo{ color:var(--text); }
+
+    nav a{
+      margin-left:25px;
+      text-decoration:none;
+      font-weight:600;
+      font-size:20px;
+      color:var(--text);
+      padding:6px 14px;
+      border-radius:500px;
+      transition:all .25s ease;
+    }
+    nav a:hover{ background:var(--shadow1); color:#fff; }
+    nav a.active{
+      background:#fff; color:var(--brand);
+      box-shadow:0 0 0 3px var(--shadow2) inset;   /* vòng viền như Home */
+    }
+
+    /* ===== NỀN parallax: y hệt GiaoDien ===== */
+    .main{
+      flex:1;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      position:relative;
+      width:100%;
+      padding:40px 80px;
+      overflow:hidden;
+
+      background-image: var(--sky), var(--sky);
+      background-repeat: repeat-x, repeat-x;
+      background-size: 2000px auto, 2000px auto;
+      background-position: 0px -150px, 2000px -150px;
+      animation: skyLoop 200s linear infinite;
+    }
+    @keyframes skyLoop{
+      from{ background-position: 0px -150px, 2000px -150px; }
+      to  { background-position:-2000px -150px, 0px   -150px; }
+    }
+    .main::after{
+      content:"";
+      position:absolute; left:0; right:0; bottom:0;
+      width:75%; height:95%;
+      background: var(--grass) no-repeat center bottom;
+      background-size: cover;
+      z-index:1;
+      transform: translateY(100px);
+      transition: background 1s ease;
+    }
+
+    .container{
+      position:relative; z-index:2;
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:60px; align-items:center;
+      width:100%; max-width:1400px;
+    }
+
+    /* ===== TEAM GRID (trái) ===== */
+/* ===== TEAM GRID (trái) ===== */
+.team-grid{
+  position: relative;
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  grid-auto-rows:minmax(250px, auto);
+  gap:26px 10px;
+  justify-items:center;
+  align-items:center;
+  padding-left:10px;
+}
+
+/* Avatar từng thành viên */
+.member{
+  position: relative;
+  width:250px;
+  height:250px;
+  border-radius:50%;
+  border:14px solid #4B6BAD;
+  box-shadow:0 8px 18px var(--shadow1);
+  overflow:visible;              /* cho vòng chữ ló ra ngoài */
+  transition:transform .3s ease, box-shadow .3s ease;
+}
+
+.member:hover{
+  transform:scale(1.06);
+  box-shadow:0 10px 22px var(--shadow2);
+}
+
+.member img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:50%;
+  position:relative;
+  z-index:1;
+}
+
+/* Vòng chữ chạy trên viền xanh */
+.name-circle{
+  position:absolute;
+  top:-12px;
+  left:-12px;
+  width:250px;
+  height:250px;                  /* bằng đúng .member */
+  pointer-events:none;
+  transform-origin:50% 50%;
+  animation:spinName 22s linear infinite;  /* quay chậm, đỡ giật */
+  will-change:transform;
+  z-index:2;                     /* nằm trên avatar */
+}
+
+.name-circle text{
+  font-family:'Poppins',sans-serif;
+  text-transform:uppercase;
+  letter-spacing:2.5px;
+  fill:#0c3690;
+  font-size:16px;
+  font-weight:700; 
+}
+
+@keyframes spinName{
+  from{ transform:rotate(0deg); }
+  to  { transform:rotate(360deg); }
+}
+
+    /* ===== INFO (phải) ===== */
+    .about-info{ display:flex; flex-direction:column; gap:24px; justify-content:center; margin-left:-20px; }
+    .about-info h1{ font-size:46px; font-weight:700; color:var(--brand); text-shadow:0 2px 6px rgba(0,0,0,.08); }
+    .info-box{
+      background:var(--panel); color:var(--text);
+      padding:24px 30px; border-radius:24px;
+      border:1px solid var(--border);
+      box-shadow:0 8px 20px var(--shadow1);
+      line-height:1.6; font-size:20px;
+      transition:all .3s ease;
+    }
+
+    @media(max-width:1000px){
+      .container{ grid-template-columns:1fr; gap:30px; text-align:center; }
+      .about-info{ margin-left:0; }
+      .about-info h1{ font-size:38px; }
+      .team-grid{ grid-template-columns:repeat(3,1fr); }
+      .main::after{ width:100%; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="logo">🐶 Súp AI Pet</div>
+    <nav>
+      <a href="GiaoDien.html" class="nav-link">Home</a>
+      <a href="AboutUs.html" class="nav-link active">About us</a>
+      <a href="Chinhsachqrt.html" class="nav-link">Privacy Policy</a>
+      <a href="#" id="modeToggle" class="nav-link">Mode</a>
+      <a href="#" id="musicToggle">🎵 Music</a>
+    </nav>
+  </header>
+
+<section class="main">
+  <div class="container">
+    <!-- TEAM GRID + AVATAR -->
+<div class="team-grid">
+  <div class="member">
+    <img src="TaiNguyen/Thầy Phương.jpg" alt="Thầy Phương">
+    <svg class="name-circle"
+         viewBox="0 0 250 250"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:xlink="http://www.w3.org/1999/xlink">
+      <defs>
+        <path id="circle-phuong"
+              d="M125,125 m-110,0 a110,110 0 1,1 220,0 a110,110 0 1,1 -220,0" />
+      </defs>
+      <text text-anchor="middle">
+        <textPath xlink:href="#circle-phuong" startOffset="50%">
+          THẦY PHƯƠNG • SENSELAB •
+        </textPath>
+      </text>
+    </svg>
+  </div>
+
+  <div class="member">
+    <img src="TaiNguyen/Mẫn.jpg" alt="Mẫn">
+    <svg class="name-circle"
+         viewBox="0 0 250 250"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:xlink="http://www.w3.org/1999/xlink">
+      <defs>
+        <path id="circle-man"
+              d="M125,125 m-110,0 a110,110 0 1,1 220,0 a110,110 0 1,1 -220,0" />
+      </defs>
+      <text text-anchor="middle">
+        <textPath xlink:href="#circle-man" startOffset="50%">
+          MẪN • SENSELAB •
+        </textPath>
+      </text>
+    </svg>
+  </div>
+
+  <div class="member">
+    <img src="TaiNguyen/Ngân.jpg" alt="Ngân">
+    <svg class="name-circle"
+         viewBox="0 0 250 250"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:xlink="http://www.w3.org/1999/xlink">
+      <defs>
+        <path id="circle-ngan"
+              d="M125,125 m-110,0 a110,110 0 1,1 220,0 a110,110 0 1,1 -220,0" />
+      </defs>
+      <text text-anchor="middle">
+        <textPath xlink:href="#circle-ngan" startOffset="50%">
+          NGÂN • SENSELAB •
+        </textPath>
+      </text>
+    </svg>
+  </div>
+
+  <div class="member">
+    <img src="TaiNguyen/Nhi.jpg" alt="Nhi">
+    <svg class="name-circle"
+         viewBox="0 0 250 250"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:xlink="http://www.w3.org/1999/xlink">
+      <defs>
+        <path id="circle-nhi"
+              d="M125,125 m-110,0 a110,110 0 1,1 220,0 a110,110 0 1,1 -220,0" />
+      </defs>
+      <text text-anchor="middle">
+        <textPath xlink:href="#circle-nhi" startOffset="50%">
+          NHI • SENSELAB •
+        </textPath>
+      </text>
+    </svg>
+  </div>
+
+  <div class="member">
+    <img src="TaiNguyen/Thư.jpg" alt="Thư">
+    <svg class="name-circle"
+         viewBox="0 0 250 250"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:xlink="http://www.w3.org/1999/xlink">
+      <defs>
+        <path id="circle-thu"
+              d="M125,125 m-110,0 a110,110 0 1,1 220,0 a110,110 0 1,1 -220,0" />
+      </defs>
+      <text text-anchor="middle">
+        <textPath xlink:href="#circle-thu" startOffset="50%">
+          THƯ • SENSELAB •
+        </textPath>
+      </text>
+    </svg>
+  </div>
+
+  <div class="member">
+    <img src="TaiNguyen/Ý.jpg" alt="Ý">
+    <svg class="name-circle"
+         viewBox="0 0 250 250"
+         xmlns="http://www.w3.org/2000/svg"
+         xmlns:xlink="http://www.w3.org/1999/xlink">
+      <defs>
+        <path id="circle-y"
+              d="M125,125 m-110,0 a110,110 0 1,1 220,0 a110,110 0 1,1 -220,0" />
+      </defs>
+      <text text-anchor="middle">
+        <textPath xlink:href="#circle-y" startOffset="50%">
+          Ý • SENSELAB •
+        </textPath>
+      </text>
+    </svg>
+  </div>
+</div>
+
+    <!-- NỘI DUNG PHẢI -->
+    <div class="about-info">
+      <h1>XIN CHÀO! CHÚNG MÌNH LÀ SENSELAB-NHÓM CÁC ĐẦU BẾP TÀI BA</h1>
+      <div class="info-box">
+        <p><strong>🎯 Mục tiêu:</strong> Súp được tạo ra với mong muốn mang lại niềm vui và hỗ trợ học sinh thông qua trí tuệ nhân tạo – nhận diện cảm xúc, trò chuyện thân thiện và sáng tạo.</p>
+        <p><strong>🚀 Hình thành:</strong> Dự án được phát triển bởi nhóm học sinh năng động, yêu thích công nghệ của thầy Phương, bắt đầu từ năm 2025 với tinh thần học hỏi và khám phá AI.</p>
+        <p><strong>💡 Định hướng:</strong> Chúng tôi không chỉ tạo ra một thú cưng ảo đáng yêu, mà còn mong muốn Súp trở thành người bạn đồng hành biết lắng nghe và chia sẻ cùng bạn trẻ Việt Nam 💖</p>
+      </div>
+    </div>
+  </div>
+</section>
+  <audio id="bgMusic" loop>
+  <source src="peace.mp3" type="audio/mpeg">
+</audio>
+  <script>
+    // ===== Giữ trạng thái mode giữa các trang =====
+    const THEME_KEY = 'sup-theme';
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'dark') document.body.classList.add('dark');
+
+    const modeBtn = document.getElementById('modeToggle');
+    function updateBtn(){
+      modeBtn.textContent = document.body.classList.contains('dark') ? 'Light Mode' : 'Dark Mode';
+    }
+    updateBtn();
+
+    modeBtn.addEventListener('click', (e)=>{
+      e.preventDefault(); // để <a> không nhảy trang
+      document.body.classList.toggle('dark');
+      localStorage.setItem(THEME_KEY, document.body.classList.contains('dark') ? 'dark' : 'light');
+      updateBtn();
+    });
+    // 🎵 Toggle bật/tắt nhạc nền
+const musicBtn = document.getElementById("musicToggle");
+const music = document.getElementById("bgMusic");
+let musicPlaying = false;
+musicBtn.addEventListener("click", () => {
+  if (!musicPlaying) {
+    music.play()
+      .then(() => {
+        musicPlaying = true;
+        musicBtn.textContent = "🔇 Stop";
+      })
+      .catch(err => {
+        console.error("Không thể phát nhạc:", err);
+        alert("Trình duyệt chặn tự động phát nhạc, bạn thử click lại nha 🎵");
+      });
+  } else {
+    music.pause();
+    musicPlaying = false;
+    musicBtn.textContent = "🎵 Music";
+  }
+});
+  </script>
+</body>
+</html>

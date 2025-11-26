@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chính sách Quyền riêng tư — PawCare</title>
+
+  <!-- Font giống giao diện chính -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    html, body {
+      width:100%;
+      height:100%;
+      overflow:hidden;                  /* body không scroll */
+      transition:background .5s ease;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+
+    /* ==== Biến màu giống GiaoDien.html ==== */
+    :root {
+      --sky: url('TaiNguyen/BackGroundSang.png');
+      --grass: url('TaiNguyen/NenCoSang.png');
+      --nav:#CDECFF;
+      --shadow1:#A5C2E9;
+      --shadow2:#90B0C4;
+      --user:#69B9E7;
+      --brand:#4B6BAD;
+      --page:#FFFFFF;
+      --text:#1e293b;
+      --panel:#ffffff;
+      --border:#dbeafe;
+      --good:#16a34a;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --great:#2563eb;
+    }
+    body.dark {
+      --sky: url('TaiNguyen/BackGroundToi.png');
+      --grass: url('TaiNguyen/NenCoToi.png');
+      --nav:#4D50A6;
+      --shadow1:#26264F;
+      --shadow2:#90B0C4;
+      --user:#6F77CC;
+      --brand:#4B6BAD;
+      --page:#0C0B3E;
+      --text:#E6E9FF;
+      --panel:#1A1B4D;
+      --border:#3D4CA0;
+    }
+
+    body {
+      font-family:'Poppins',sans-serif;
+      color:var(--text);
+      background:var(--page);
+      display:flex;
+      flex-direction:column;
+      height:100vh;
+      transition:all .4s ease;
+    }
+
+    /* ===== HEADER ===== */
+    header{
+      height:80px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 60px;
+      background:var(--nav);
+      border-bottom:1px solid var(--shadow2);
+      box-shadow:0 6px 18px var(--shadow1);
+      transition:all .4s ease;
+      position:relative;
+      z-index:5;
+    }
+    .logo{
+      font-weight:700;
+      font-size:40px;
+      color:var(--brand);
+      transition:color .4s ease;
+    }
+    body.dark .logo{ color:var(--text); }
+
+    nav a{
+      margin-left:25px;
+      text-decoration:none;
+      font-weight:600;
+      font-size:20px;
+      color:var(--text);
+      padding:6px 14px;
+      border-radius:999px;
+      transition:all .25s ease;
+    }
+    nav a:hover{
+      background:var(--shadow1);
+      color:#fff;
+    }
+    nav a.active{
+      background:#fff;
+      color:var(--brand);
+      box-shadow:0 0 0 3px var(--shadow2) inset;
+    }
+
+    /* ===== Nền chính: mây + cỏ ===== */
+    .main{
+      flex:1;
+      display:flex;
+      align-items:center;                     /* canh giữa panel theo chiều dọc */
+      justify-content:center;
+      position:relative;
+      width:100%;
+      height:calc(100vh - 80px);             /* trừ phần header */
+      overflow:hidden;                        /* nền không scroll */
+      padding:20px;
+      transition:background 1s ease;
+
+      background-image: var(--sky), var(--sky);
+      background-repeat: repeat-x, repeat-x;
+      background-size: 2000px auto, 2000px auto;
+      background-position: 0px -150px, 2000px -150px;
+      animation: skyLoop 200s linear infinite;
+    }
+    @keyframes skyLoop{
+      from{ background-position: 0px -150px, 2000px -150px; }
+      to  { background-position:-2000px -150px, 0px   -150px; }
+    }
+    .main::after{
+      content:"";
+      position:absolute;
+      bottom:0;
+      left:0;
+      right:0;
+      width:75%;
+      height:95%;
+      background: var(--grass) no-repeat center bottom;
+      background-size: cover;
+      z-index:1;
+      transform:translateY(100px);
+      transition:background 1s ease;
+    }
+
+    /* ===== Khung nội dung chính sách ===== */
+    .policy-wrapper{
+      position:relative;
+      z-index:2;
+      width:100%;
+      max-width:900px;
+      height:100%;
+      margin:0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    
+.policy-box{
+  width:100%;
+  max-height:100%;
+  overflow-y:scroll;
+  padding-right:8px;
+
+  /* ẨN SCROLLBAR - TRÊN MỌI TRÌNH DUYỆT */
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge cũ */
+}
+
+.policy-box::-webkit-scrollbar{
+  display:none;                /* Chrome / Edge / Safari */
+}
+
+    .policy-header{
+      background:rgba(255,255,255,0.92);
+      backdrop-filter:blur(12px);
+      border-radius:24px;
+      padding:18px 22px;
+      margin-bottom:16px;
+      box-shadow:0 8px 20px rgba(0,0,0,.12);
+      border:1px solid var(--border);
+    }
+    body.dark .policy-header{
+      background:rgba(26,27,77,0.95);
+    }
+
+    .policy-header h1{
+      margin:0 0 6px;
+      font-size:1.6rem;
+    }
+    .policy-header p{
+      margin:0;
+      font-size:0.95rem;
+      opacity:0.9;
+    }
+
+    .policy-card{
+      background:var(--panel);
+      padding:22px 24px;
+      border-radius:24px;
+      box-shadow:0 8px 24px rgba(0,0,0,.14);
+      border:1px solid var(--border);
+      font-size:0.98rem;
+      line-height:1.6;
+    }
+    .policy-card h2{
+      margin:18px 0 8px;
+      font-size:1.15rem;
+      color:var(--brand);
+    }
+    .policy-card ol,
+    .policy-card ul{
+      padding-left:20px;
+      margin:4px 0 10px;
+    }
+    .policy-card li{
+      margin-bottom:4px;
+    }
+
+    .consent{
+      margin-top:18px;
+      padding:18px 20px;
+      background:linear-gradient(180deg,#fff,#fbfdff);
+      border-radius:18px;
+      border:1px dashed var(--border);
+      font-size:0.95rem;
+    }
+    body.dark .consent{
+      background:linear-gradient(180deg,#1A1B4D,#151645);
+    }
+
+    .buttons{
+      display:flex;
+      gap:12px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+    button{
+      padding:10px 14px;
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,.06);
+      cursor:pointer;
+      background:#fff;
+      font-weight:600;
+    }
+    #btn-request{
+      background:linear-gradient(90deg,var(--user),var(--brand));
+      color:#fff;
+      border:none;
+      box-shadow:0 6px 14px rgba(0,0,0,.18);
+    }
+    #btn-decline{
+      background:#e5e7eb;
+    }
+
+    .status{
+      margin-top:12px;
+      font-size:0.9rem;
+      opacity:0.9;
+    }
+
+    footer{
+      margin-top:18px;
+      font-size:0.85rem;
+      opacity:0.9;
+      text-align:center;
+    }
+
+    /* Cookie banner */
+    .cookie-banner {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      padding: 15px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      display: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.16);
+      z-index: 1000;
+      font-size:0.95rem;
+    }
+    .cookie-banner p {
+      margin: 0 0 8px 0;
+    }
+    .cookie-banner button {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight:600;
+    }
+    #cookie-accept {
+      background: var(--user);
+      color: #fff;
+      margin-right:8px;
+    }
+    #cookie-decline {
+      background: #eee;
+      color:#111;
+    }
+
+    @media(max-width:900px){
+      header{
+        padding:0 18px;
+      }
+      nav a{
+        font-size:16px;
+        margin-left:10px;
+      }
+      .policy-card,
+      .policy-header{
+        padding:16px;
+      }
+      .main::after{
+        width:100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="logo">🐶 Súp AI Pet</div>
+    <nav>
+      <a href="GiaoDien.html" class="nav-link">Home</a>
+      <a href="AboutUs.html" class="nav-link">About us</a>
+      <a href="Chinhsachqrt.html" class="nav-link active">Privacy Policy</a>
+      <a href="#" id="modeToggle">Dark Mode</a>
+      <a href="#" id="musicToggle">🎵 Music</a>
+    </nav>
+  </header>
+
+  <!-- NỘI DUNG CHÍNH SÁCH -->
+  <section class="main">
+    <div class="policy-wrapper">
+      <!-- BOX này scroll -->
+      <div class="policy-box">
+
+        <div class="policy-header">
+          <h1>PawCare — Chính sách Quyền riêng tư</h1>
+          <p>Cập nhật lần cuối: 15/11/2025</p>
+          <p>Trang web PawCare được vận hành và phát triển bởi <strong>SenseLab</strong>.</p>
+        </div>
+
+        <section class="policy-card">
+          <h2>1. Dữ liệu chúng tôi thu thập</h2>
+          <ol>
+            <li><strong>Dữ liệu do người dùng cung cấp trực tiếp:</strong> Tên, trường - khu vực của trường, lớp, nội dung người dùng gửi qua hệ thống.</li>
+            <li><strong>Dữ liệu kỹ thuật:</strong> Địa chỉ IP, loại thiết bị, trình duyệt, nhật ký hệ thống, tần suất truy cập.</li>
+            <li><strong>Quyền truy cập Camera và Micro:</strong> Trang web có thể yêu cầu camera/micro để phân tích cảm xúc khi có sự đồng ý của người dùng.</li>
+          </ol>
+
+          <h2>2. Mục đích sử dụng dữ liệu</h2>
+          <ul>
+            <li>Quản lý thông tin người dùng.</li>
+            <li>Phân tích cảm xúc và tạo báo cáo một cách chính xác.</li>
+            <li>Chia sẻ có kiểm soát với phòng tư vấn tâm lý khi có sự đồng ý của người dùng.</li>
+          </ul>
+
+          <h2>3. Lưu trữ và bảo mật dữ liệu</h2>
+          <p>
+            Dữ liệu được mã hóa khi truyền (HTTPS). Dữ liệu nhạy cảm được mã hóa ở mức trường trước khi lưu vào cơ sở dữ liệu.
+            Hệ thống lưu trữ trên máy chủ có kiểm soát truy cập, sao lưu định kỳ và áp dụng tường lửa, giám sát đăng nhập để phòng chống truy cập trái phép.
+          </p>
+
+          <h2>4. Quyền của người dùng</h2>
+          <ul>
+            <li>Yêu cầu quyền truy cập dữ liệu cá nhân.</li>
+            <li>Yêu cầu chỉnh sửa hoặc xóa dữ liệu.</li>
+          </ul>
+
+          <h2>5. Liên hệ</h2>
+          <p>Nếu có thắc mắc, vui lòng liên hệ: <strong>privacy@senselab.example</strong></p>
+
+          <section class="consent">
+            <h2>Quyền truy cập Camera &amp; Micro</h2>
+            <p>Để sử dụng tính năng phân tích cảm xúc, PawCare cần quyền truy cập <strong>Camera</strong> và <strong>Microphone</strong>. Dữ liệu video/audio sẽ được xử lý tạm thời để phân tích và chỉ lưu lại khi bạn đồng ý.</p>
+
+            <div class="buttons">
+              <button id="btn-request">Yêu cầu quyền Camera/Micro</button>
+              <button id="btn-decline">Từ chối</button>
+            </div>
+
+            <div id="status" class="status"></div>
+          </section>
+
+          <footer>
+            <small>SenseLab — PawCare</small>
+          </footer>
+        </section>
+      </div>
+    </div>
+
+    <!-- Cookie banner -->
+    <div id="cookie-banner" class="cookie-banner">
+      <p>Trang web sử dụng cookies để lưu thông tin và cải thiện trải nghiệm. Bằng cách tiếp tục, bạn đồng ý với chính sách cookies.</p>
+      <button id="cookie-accept">Đồng ý</button>
+      <button id="cookie-decline">Từ chối</button>
+    </div>
+  </section>
+
+  <!-- Nhạc nền -->
+  <audio id="bgMusic" loop>
+    <source src="peace.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    // ========== Mode sáng / tối ==========
+    const modeBtn = document.getElementById("modeToggle");
+    modeBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      document.body.classList.toggle("dark");
+      modeBtn.textContent = document.body.classList.contains("dark") ? "Light Mode" : "Dark Mode";
+    });
+
+    // ========== Nhạc nền ==========
+    const musicBtn = document.getElementById("musicToggle");
+    const music = document.getElementById("bgMusic");
+    let musicPlaying = false;
+
+    musicBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (!musicPlaying) {
+        music.play()
+          .then(() => {
+            musicPlaying = true;
+            musicBtn.textContent = "🔇 Stop";
+          })
+          .catch(err => {
+            console.error("Không thể phát nhạc:", err);
+            alert("Trình duyệt chặn tự động phát nhạc, bạn thử click lại nha 🎵");
+          });
+      } else {
+        music.pause();
+        musicPlaying = false;
+        musicBtn.textContent = "🎵 Music";
+      }
+    });
+
+    // ========== Quyền Camera / Micro ==========
+    const btnRequest = document.getElementById('btn-request');
+    const btnDecline = document.getElementById('btn-decline');
+    const statusEl = document.getElementById('status');
+
+    btnRequest.addEventListener('click', async () => {
+      statusEl.textContent = 'Đang yêu cầu quyền... Trình duyệt sẽ hỏi bạn cho phép.';
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        statusEl.textContent = 'Đã cấp quyền Camera & Micro. Đang gửi consent tới server...';
+
+        try {
+          const resp = await fetch('/api/consent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              consent: true,
+              timestamp: new Date().toISOString(),
+              userAgent: navigator.userAgent
+            })
+          });
+          if (!resp.ok) throw new Error('Lỗi server khi gửi consent');
+        } catch (err) {
+          console.warn('Không gửi được consent lên server:', err);
+        }
+
+        statusEl.textContent = 'Bạn đã đồng ý. PawCare sẽ chỉ lưu dữ liệu khi bạn đồng ý rõ ràng.';
+
+        const video = document.createElement('video');
+        video.autoplay = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.srcObject = stream;
+        video.style.width = '320px';
+        video.style.marginTop = '12px';
+        statusEl.appendChild(document.createElement('br'));
+        statusEl.appendChild(video);
+
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Quyền bị từ chối hoặc có lỗi: ' + err.message;
+      }
+    });
+
+    btnDecline.addEventListener('click', async () => {
+      statusEl.textContent = 'Bạn đã từ chối cấp quyền. Một số chức năng sẽ bị hạn chế.';
+      try {
+        await fetch('/api/consent', {
+          method: 'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            consent: false,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent
+          })
+        });
+      } catch(e) {
+        console.warn('Không gửi được consent decline:', e);
+      }
+    });
+
+    // ========== Cookie banner ==========
+    const banner = document.getElementById('cookie-banner');
+    const acceptBtn = document.getElementById('cookie-accept');
+    const declineBtn = document.getElementById('cookie-decline');
+
+    function setCookie(name, value, days){
+      const d = new Date();
+      d.setTime(d.getTime() + days*24*60*60*1000);
+      document.cookie = name + "=" + value + ";path=/;expires=" + d.toUTCString();
+    }
+
+    function getCookie(name){
+      const cname = name + "=";
+      const ca = document.cookie.split(";");
+      for(let cookie of ca){
+        cookie = cookie.trim();
+        if(cookie.indexOf(cname) === 0) return cookie.substring(cname.length);
+      }
+      return "";
+    }
+
+    if(!getCookie("pawcare_cookie_consent")){
+      banner.style.display = "block";
+    }
+
+    acceptBtn.addEventListener("click", async () => {
+      setCookie("pawcare_cookie_consent","accepted",365);
+      banner.style.display = "none";
+      try{
+        await fetch("/api/cookie-consent",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({consent:true})
+        });
+      }catch(e){
+        console.warn("Không gửi được cookie-consent:", e);
+      }
+    });
+
+    declineBtn.addEventListener("click", async () => {
+      setCookie("pawcare_cookie_consent","declined",365);
+      banner.style.display = "none";
+      try{
+        await fetch("/api/cookie-consent",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({consent:false})
+        });
+      }catch(e){
+        console.warn("Không gửi được cookie-consent:", e);
+      }
+    });
+  </script>
+</body>
+</html>

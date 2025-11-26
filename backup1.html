@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🐶 AI Pet Robot – Demo</title>
+
+  <!-- 🧠 Thêm dòng này để fix lỗi tf is not defined -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0"></script>
+
+  <!-- 🧪 Sau đó mới tới Teachable Machine -->
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; }
+    .box { border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-top: 20px; }
+    button { padding: 10px 20px; margin-top: 10px; cursor: pointer; }
+    #reply {
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      min-height: 150px;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🐶 AI Pet Robot – Demo</h1>
+
+  <!-- CAMERA -->
+  <div class="box">
+    <h3>🎥 Camera & Nhận diện cảm xúc</h3>
+    <div id="webcam" style="width: 300px; height: 300px;"></div>
+    <p>Cảm xúc: <span id="emotion">–</span></p>
+    <button id="startBtn">Bắt đầu</button>
+    <button id="stopBtn" disabled>Dừng</button>
+  </div>
+
+  <!-- GEMINI CHAT -->
+  <div class="box">
+    <h3>💬 Trò chuyện với Gemini</h3>
+    <textarea id="userText" rows="3" style="width:100%" placeholder="Nhập lời bạn muốn nói..."></textarea>
+    <br>
+    <button id="chatBtn">Gửi</button>
+    <div id="reply"></div>
+  </div>
+
+  <script>
+    // ===== CONFIG =====
+    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/kCPi9VYRV/"; // Thay bằng link thật (có dấu / ở cuối)
+    const GEMINI_API_KEY = "AIzaSyCXIeDJwtEVFxqo26ht8PRmKhiLIVn3tmw"; // Thay bằng API KEY của bạn
+
+    let model, webcam, maxPredictions, loopId;
+
+    async function initModel() {
+      const modelURL = MODEL_URL + "model.json";
+      const metadataURL = MODEL_URL + "metadata.json";
+      model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
+    }
+
+    async function getExternalCameraId() {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === "videoinput");
+      if (videoDevices.length === 0) throw new Error("Không tìm thấy thiết bị camera nào.");
+      const usbCam = videoDevices.find(cam => cam.label.toLowerCase().includes("usb"));
+      return (usbCam || videoDevices[0]).deviceId;
+    }
+
+    async function startCam() {
+      const flip = true;
+      const deviceId = await getExternalCameraId();
+      webcam = new tmImage.Webcam(300, 300, flip);
+      try {
+        await webcam.setup({ deviceId });
+        await webcam.play();
+        console.log("🎥 Đang dùng camera:", deviceId);
+        document.getElementById("webcam").innerHTML = '';
+        document.getElementById("webcam").appendChild(webcam.canvas);
+        loopId = window.requestAnimationFrame(loop);
+      } catch (err) {
+        alert("Không thể bật camera: " + err.message);
+        console.error("❌ Lỗi camera:", err);
+      }
+    }
+
+    async function loop() {
+      webcam.update();
+      await predict();
+      loopId = window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+      let best = prediction.reduce((a, b) => a.probability > b.probability ? a : b);
+      document.getElementById("emotion").innerText = `${best.className.toUpperCase()} (${(best.probability * 100).toFixed(1)}%)`;
+    }
+
+    // ==== Chat Function ====
+    const chatBox = document.getElementById("reply");
+    const inputBox = document.getElementById("userText");
+
+    async function sendMessage() {
+      const text = inputBox.value.trim();
+      if (text === "") return;
+
+      // Hiển thị người dùng
+      const userMsg = document.createElement("div");
+      userMsg.style.marginBottom = "10px";
+      userMsg.innerHTML = `<strong>Bạn:</strong> ${text}`;
+      chatBox.appendChild(userMsg);
+
+      inputBox.value = ""; // xoá nội dung
+
+      const emotion = document.getElementById("emotion").innerText;
+      const prompt = `Bạn là thú cưng dễ thương. Học sinh có cảm xúc: ${emotion}. Học sinh nói: "${text}". Hãy trả lời ngắn gọn (≤3 câu), an toàn và dễ thương.`;
+
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+
+      const data = await res.json();
+      const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Không có phản hồi.";
+
+      // Hiển thị phản hồi
+      const botMsg = document.createElement("div");
+      botMsg.style.marginBottom = "15px";
+      botMsg.innerHTML = `<strong>🐶 PetBot:</strong> ${replyText}`;
+      chatBox.appendChild(botMsg);
+
+      // Đọc to
+      const synth = window.speechSynthesis;
+      synth.speak(new SpeechSynthesisUtterance(replyText));
+
+      // Cuộn xuống
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // ==== Sự kiện ====
+    document.getElementById("chatBtn").addEventListener("click", sendMessage);
+
+    inputBox.addEventListener("keydown", async (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        await sendMessage();
+      }
+    });
+
+    document.getElementById("startBtn").addEventListener("click", async () => {
+      await initModel();
+      await startCam();
+      document.getElementById("startBtn").disabled = true;
+      document.getElementById("stopBtn").disabled = false;
+    });
+
+    document.getElementById("stopBtn").addEventListener("click", () => {
+      cancelAnimationFrame(loopId);
+      webcam.stop();
+      document.getElementById("startBtn").disabled = false;
+      document.getElementById("stopBtn").disabled = true;
+    });
+  </script>
+</body>
+</html>

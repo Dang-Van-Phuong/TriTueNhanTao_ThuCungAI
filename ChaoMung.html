@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🐶 Mental Health Supporter – Meet Súp</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--sky: url('TaiNguyen/BackGroundSang.png');
+  --nav:#CDECFF;
+  --shadow1:#A5C2E9;
+  --shadow2:#90B0C4;
+  --user:#69B9E7;
+  --brand:#4B6BAD;
+  --page:#FFFFFF;
+  --text:#1e293b;
+  --panel:#ffffff;
+  --border:#dbeafe;
+  --accent2: linear-gradient(90deg, #69B9E7, #4B6BAD);
+    }
+    body.dark {
+  --sky: url('TaiNguyen/bgd.jpg');
+  --nav:#4D50A6;
+  --shadow1:#26264F;
+  --shadow2:#90B0C4;
+  --user:#6F77CC;
+  --brand:#4B6BAD;
+  --page:#0C0B3E;
+  --text:#E6E9FF;
+  --panel:#1A1B4D;
+  --border:#3D4CA0;
+}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+  min-height:100vh;
+  font-family:'Poppins',sans-serif;
+  color:var(--text);
+  display:flex;flex-direction:column;
+  margin: 0;
+  overflow-x: hidden;
+  color: var(--text);
+  transition: background 0.5s ease;
+    }
+
+    /* ---------- NAV ---------- */
+    header {
+  height:80px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end; /* 🔹 Dồn tất cả sang phải */
+  padding:0 60px;
+  background:var(--nav);
+  border-bottom:1px solid var(--shadow2);
+  box-shadow:0 6px 18px var(--shadow1);
+}
+    .logo{ font-weight:700; font-size:40px; color:var(--brand); transition:color .4s ease; }
+    body.dark .logo{ color:var(--text); }
+    nav a{
+      margin-left:25px; text-decoration:none; font-weight:600; font-size:20px;
+      color:var(--text); padding:6px 14px; border-radius:999px; transition:all .25s ease;
+    }
+    nav a:hover{ background:var(--shadow1); color:#fff; }
+    nav a.active{ background:#fff; color:var(--brand); box-shadow:0 0 0 3px var(--shadow2) inset; }
+    /* ---------- MAIN (2 COLUMNS) ---------- */
+     .main{
+      flex:1;display:flex;align-items:center;justify-content:center;gap:64px;
+       position: relative;
+       background: var(--sky) center/cover no-repeat;
+       height: calc(100vh - 80px);
+       overflow: hidden;
+       padding:20px 56px 60px;
+    }
+    @keyframes skyLoop {
+  from { background-position: 0px -150px, 2000px -150px; }
+  to { background-position: -2000px -150px, 0px -150px; }
+}
+    .left{
+      flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+      max-width:640px;
+    }
+    h1.title{
+      font-size:clamp(48px,7vw,84px);
+      line-height:1.05;font-weight:700;margin-bottom:18px;
+      background:linear-gradient(90deg,#1e8bd4,#06b6d4);
+      -webkit-background-clip:text;color:transparent;
+      letter-spacing:.5px;
+    }
+    p.sub{color:var(--muted);font-size:16px;margin-bottom:26px;max-width:520px}
+    button.primary{
+      background:var(--accent2);color:#fff;border:none;border-radius:14px;
+      padding:14px 34px;font-weight:700;font-size:16px;cursor:pointer;
+      box-shadow:0 8px 18px rgba(0,0,0,.12);transition:transform .2s ease, background .2s ease;
+    }
+    button.primary:hover{background:#3d66a0;transform:translateY(-1px)}
+
+    .right{
+      flex:1;display:flex;align-items:center;justify-content:center;
+    }
+    model-viewer{
+      width:min(90%,560px);height:min(70vh,560px);
+      background:transparent;--poster-color:transparent;
+      filter:drop-shadow(0 0 26px rgba(0,255,255,.35));
+    }
+
+    /* ---------- FORM POPUP (giữ logic cũ) ---------- */
+    .form{display:none;position:fixed;inset:0;z-index:10;
+      background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
+      display:flex;align-items:center;justify-content:center}
+    .form-card{
+      background:#fff;border:1px solid var(--border);border-radius:18px;
+      width:min(520px,92%);padding:24px 28px;box-shadow:0 12px 30px rgba(0,0,0,.15);
+      animation:fadeIn .25s ease;
+    }
+    .form-card h2{margin:0 0 6px;font-size:22px}
+    .grid{display:grid;gap:12px;margin-top:10px}
+    label{font-weight:600;font-size:14px}
+    input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);font-size:14px}
+    input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px #a5f3fc}
+    .row{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
+    .hint{color:var(--muted);font-size:12px;margin-top:6px}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 960px){
+      header{padding:16px 22px}
+      .main{flex-direction:column;gap:24px;padding:10px 20px 40px}
+      .right, .left{width:100%}
+      h1.title{font-size:clamp(40px,9vw,66px)}
+      model-viewer{width:100%;height:52vh}
+      header nav a{margin-left:18px}
+    }
+  </style>
+</head>
+<body>
+  <!-- NAV -->
+  <header>
+    <nav>
+      <a href="#">Home</a>
+      <a href="#">About us</a>
+      <a href="Chinhsachqrt.html" class="nav-link">Privacy Policy</a>
+      <a href="#" id="modeToggle">Mode</a>
+      <a href="#" id="musicToggle">🎵 Music</a>
+    </nav>
+  </header>
+
+  <!-- MAIN 2-COLUMN LAYOUT -->
+  <section class="main">
+    <div class="left">
+      <h1 class="title">PAWCARE<br>SUPPORTER</h1>
+      <p class="sub">Bạn cần một người tâm sự. Hãy click vào đây để gặp mình nhé!</p></p>
+      <button id="meetBtn" class="primary">MEET SÚP</button>
+    </div>
+
+    <div class="right">
+      <!-- Chó đứng to và lắc lắc -->
+      <model-viewer id="pet3d"
+        src="supp.glb"
+        autoplay
+        auto-rotate
+        auto-rotate-delay="0"
+        rotation-per-second="15deg"
+        camera-controls
+        disable-zoom
+        interaction-prompt="none">
+      </model-viewer>
+    </div>
+  </section>
+
+  <!-- FORM POPUP -->
+  <div class="form" id="formArea" style="display:none">
+    <div class="form-card">
+      <h2>🐾 Meet Súp</h2>
+      <p class="sub">Nhập thông tin trước khi bắt đầu trò chuyện nhé!</p>
+
+      <div class="grid">
+        <div>
+          <label for="fullName">Họ và tên</label>
+          <input id="fullName" type="text" placeholder="VD: Nguyễn Minh An" autocomplete="name" />
+        </div>
+        <div>
+          <label for="className">Lớp</label>
+          <input id="className" type="text" placeholder="VD: 6A3" />
+        </div>
+        <div>
+          <label for="schoolName">Trường</label>
+          <input id="schoolName" type="text" placeholder="VD: THCS & THPT Đống Đa" autocomplete="organization" />
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="demoBtn" type="button">Xóa</button>
+        <button id="startBtn" class="primary" type="button">Bắt đầu</button>
+      </div>
+      <div class="hint">• Thông tin sẽ được lưu tạm trong phiên.<br>• Sau khi bấm <b>Bắt đầu</b>, bạn sẽ chuyển sang <code>giaodien.html</code>.</div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id)=> document.getElementById(id);
+ const modeBtn = document.getElementById("modeToggle");
+    modeBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      document.body.classList.toggle("dark");
+      modeBtn.textContent = document.body.classList.contains("dark") ? "Light Mode" : "Dark Mode";
+    });
+    // Nhấn MEET SÚP -> mở form (giữ luồng cũ)
+    $('meetBtn').addEventListener('click', ()=>{
+      $('formArea').style.display='flex';
+    });
+
+    // Prefill nếu đã có dữ liệu
+    window.addEventListener('DOMContentLoaded', ()=>{
+      try{
+        const raw = localStorage.getItem('userInfo');
+        if(raw){
+          const inf = JSON.parse(raw);
+          $('fullName').value = inf?.name || '';
+          $('className').value = inf?.cls || '';
+          $('schoolName').value = inf?.school || '';
+        }
+      }catch{}
+    });
+
+    // Xóa form
+    $('demoBtn').addEventListener('click', ()=>{
+      $('fullName').value = '';
+      $('className').value = '';
+      $('schoolName').value = '';
+      localStorage.removeItem('userInfo');
+      sessionStorage.removeItem('userInfo');
+    });
+
+    // Bắt đầu -> lưu & chuyển trang
+    $('startBtn').addEventListener('click', ()=>{
+      const name = $('fullName').value.trim();
+      const cls  = $('className').value.trim();
+      const school = $('schoolName').value.trim();
+      if(!name || !cls || !school){
+        alert('Vui lòng nhập đầy đủ Họ và tên, Lớp, Trường.');
+        return;
+      }
+      const info = {name, cls, school};
+      localStorage.setItem('userInfo', JSON.stringify(info));
+      sessionStorage.setItem('userInfo', JSON.stringify(info));
+      setTimeout(()=>{ window.location.href = 'giaodien.html'; }, 400);
+        //Gắn cờ để qua giao diện thì bật popup hướng dẫn
+  sessionStorage.setItem('showGuide', '1');
+  setTimeout(()=>{ window.location.href = 'giaodien.html'; }, 400);
+    });
+  </script>
+</body>
+</html>

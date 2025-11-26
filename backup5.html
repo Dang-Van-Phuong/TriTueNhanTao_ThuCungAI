@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Súp – Giao diện sáng / tối</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      zoom: 100%;
+      overflow-x: hidden;
+      transition: background 0.5s ease;
+    }
+
+    :root {
+      /* 🎨 MODE SÁNG */
+      --sky: url('TaiNguyen/BackGroundSang.png');
+      --grass: url('TaiNguyen/NenCoSang.png');
+      --nav:#CDECFF;
+      --shadow1:#A5C2E9;
+      --shadow2:#90B0C4;
+      --user:#69B9E7;
+      --brand:#4B6BAD;
+      --page:#FFFFFF;
+      --text:#1e293b;
+      --panel:#ffffff;
+      --border:#dbeafe;
+    }
+    /* Bám bảng màu cho hiệu ứng/viền */
+header{
+  background:var(--nav);
+  border-bottom:1px solid var(--shadow2);
+  box-shadow:0 6px 18px var(--shadow1);
+}
+  nav a:hover{ background:var(--shadow1); color:#fff; }
+  nav a.active{
+    background:#fff; color:var(--brand);
+    box-shadow:0 0 0 3px var(--shadow2) inset;
+  }
+
+  .chat-box{
+    background:var(--panel);
+    border:1px solid var(--border);
+    box-shadow:0 8px 20px var(--shadow1);
+  }
+
+  /* Nền phần thân chat: dùng trắng/transparent thay vì #f9fbff0d */
+  .chat-body{ background:transparent; }
+
+  /* Bong bóng */
+  .msg.bot{ background:var(--panel); color:var(--text); border-color:var(--brand); }
+  .msg.user{ background:var(--user); color:#fff; }
+
+  /* Footer và nút */
+  .chat-footer{
+    background:var(--nav);
+    border-top:1px solid var(--border);
+  }
+  .mic{
+    border:1px solid var(--border);
+    background:var(--panel);
+    box-shadow:0 6px 14px var(--shadow1);
+  }
+  .mic svg{ color:var(--brand); }
+
+  /* Nút Gửi: bỏ box-shadow tím, dùng đổ bóng theo shadow1 */
+  .send{
+    background:linear-gradient(90deg,var(--user),var(--brand));
+    box-shadow:0 6px 14px var(--shadow1);
+  }
+
+  /* Bong bóng chú thích trên Súp */
+  .bubble{
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--brand);
+    box-shadow:0 10px 24px var(--shadow1);
+  }
+
+  /* Viền input đúng bảng màu */
+  .input-wrap{
+    background:var(--panel);
+    border:1px solid var(--border);
+  }
+    body.dark {
+  /* 🌙 MODE TỐI – khớp với bảng màu */
+  --sky: url('TaiNguyen/BackGroundToi.png');
+  --grass: url('TaiNguyen/NenCoToi.png');
+
+  --nav:    #4D50A6;   /* thanh navigation đậm hơn chút */
+  --shadow1:#252E78;   /* bóng tối đậm hơn */
+  --shadow2:#90B0C4;
+  --user:   #6F77CC;   /* bong bóng user xanh dịu */
+  --brand:  #4B6BAD;   /* logo + mic + border */
+  --page:   #0C0B3E;   /* NỀN CHÍNH TỐI HƠN */
+  --text:   #E6E9FF;   /* chữ sáng rõ */
+  --panel:  #1A1B4D;   /* hộp chat – đậm hơn */
+  --border: #3D4CA0;   /* viền nhạt hơn một chút */
+}
+
+/* Hiệu ứng trong chế độ tối */
+header {
+  background: var(--nav);
+  border-bottom: 1px solid var(--shadow2);
+  box-shadow: 0 6px 18px var(--shadow1);
+}
+
+nav a:hover {
+  background: var(--shadow1);
+  color: #fff;
+}
+nav a.active {
+  background: #D0DDFF;
+  color: var(--brand);
+  box-shadow: 0 0 0 3px var(--shadow2) inset;
+}
+
+.chat-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 20px var(--shadow1);
+}
+
+.chat-body {
+  background: transparent;
+}
+
+.msg.bot {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--brand);
+}
+.msg.user {
+  background: var(--user);
+  color: #fff;
+}
+
+.chat-footer {
+  background: var(--nav);
+  border-top: 1px solid var(--border);
+}
+
+.mic {
+  border: 1px solid var(--border);
+  background: linear-gradient(145deg, #D0DDFF, #90B0C4);
+  box-shadow: 0 6px 14px var(--shadow1);
+}
+.mic svg {
+  color: var(--brand);
+}
+
+.send {
+  background: linear-gradient(90deg, var(--user), var(--brand));
+  box-shadow: 0 6px 14px var(--shadow1);
+}
+
+.bubble {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--brand);
+  box-shadow: 0 10px 24px var(--shadow1);
+}
+
+.input-wrap {
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body {
+      font-family:'Poppins',sans-serif;
+      color:var(--text);
+      background:var(--page);
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+      transition:all .4s ease;
+    }
+
+    /* ----- HEADER ----- */
+    header {
+      height:80px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 60px;
+      background:var(--nav);
+      border-bottom:1px solid var(--shadow2);
+      box-shadow:0 6px 18px var(--shadow1);
+      transition:all .4s ease;
+    }
+
+.logo {
+  font-weight:700;
+  font-size:40px;
+  color:var(--brand);
+  transition: color .4s ease;
+}
+
+body.dark .logo {
+  color: var(--text); /* Chuyển thành màu chữ sáng ở dark mode */
+}
+
+    nav a {
+      margin-left:25px;
+      text-decoration:none;
+      font-weight:600;
+      font-size: 20px;
+      color:var(--text);
+      padding:6px 14px;
+      border-radius:10px;
+      transition:all .25s ease;
+    }
+    nav a:hover { background:var(--shadow1); color:#fff; }
+    nav a.active {
+      background:#fff; color:var(--brand);
+      box-shadow:0 0 0 3px var(--shadow2) inset;
+    }
+
+    /* ----- MAIN ----- */
+    .main {
+      flex:1;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      bottom:0;
+      width:100%;
+      height:80%;
+      position:relative;
+      overflow:hidden;
+      padding:40px 80px;
+      transition:background 1s ease;
+
+      background-image: var(--sky), var(--sky);
+      background-repeat: repeat-x, repeat-x;
+      background-size: 2000px auto, 2000px auto;     /* bề ngang dài để liền mạch */
+      background-position: 0px -150px, 2000px -150px;/* lớp 2 đặt ngay sau lớp 1 */
+      animation: skyLoop 200s linear infinite;      
+
+    }
+    @keyframes skyLoop{
+  from{
+    background-position: 0px -150px, 2000px -150px;
+  }
+  to{
+    background-position: -2000px -150px, 0px -150px;
+  }
+}
+    /* lớp nền cỏ */
+    .main::after {
+      content:"";
+      position:absolute;
+      bottom:0;
+      left:0;
+      right:0;
+      width:75%;
+      height:95%;
+      background: var(--grass) no-repeat center bottom;
+      background-size: cover;
+      z-index:1;
+      transform: translateY(100px);
+      transition:background 1s ease;
+      
+    }
+    
+    /* Bố cục */
+    .container {
+      position:relative;
+      z-index:2;
+      display:grid;
+      grid-template-columns:1fr 1.2fr;
+      align-items:end;
+      width:100%;
+      max-width:1400px;
+      gap:40px;
+    }
+
+    /* ----- PET ----- */
+    .pet-area {
+      position:relative;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      height:1000px;
+    }
+    model-viewer {
+      width:min(600px,50vw);
+      height:min(600px,50vw);
+      background:transparent;
+      --poster-color:transparent;
+      filter:drop-shadow(0 8px 18px rgba(0,0,0,.15));
+      transform: translate(100px, -100px);
+      transition: all .3s ease;
+    }
+
+    .bubble {
+      position:absolute;
+      top:40px;
+      left:58%;
+      background:var(--panel);
+      padding:18px 26px;
+      border-radius:18px;
+      box-shadow:0 10px 24px var(--shadow1);
+      border:1px solid var(--border);
+      font-weight:600;
+      color:var(--brand);
+      transition: all .3s ease;
+    }
+
+    /* ----- CHAT BOX ----- */
+    .chat-box {
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:22px;
+      box-shadow:0 8px 20px var(--shadow1);
+      display:flex;
+      flex-direction:column;
+      height:620px;
+      width:520px;
+      position:relative;
+      overflow:hidden;
+      transform: translate(300px, -100px);
+      transition: all .4s ease;
+    }
+.chat-header {
+  background:var(--nav);
+  padding:18px 22px;
+  font-weight:700;
+  font-size:22px;
+  color:var(--brand);
+  border-bottom:1px solid var(--shadow2);
+  text-align:center;
+  transition:all .3s ease;
+}
+
+body.dark .chat-header {
+  color: var(--text);  /* chữ sáng rõ khi chuyển sang mode tối */
+}
+
+    .chat-body {
+      flex:1;
+      padding:20px;
+      overflow:auto;
+      background:#f9fbff0d;
+    }
+
+    .msg {
+      max-width:75%;
+      margin:8px 0;
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid var(--border);
+      position:relative;
+      word-wrap:break-word;
+      white-space:pre-wrap;
+      transition: all .3s ease;
+    }
+    .msg.bot {
+      background:var(--panel);
+      color:var(--text);
+      border-color:var(--brand);
+    }
+    .msg.user {
+      background:var(--user);
+      color:#fff;
+      margin-left:auto;
+    }
+
+    .msg.bot::before {
+      content:"";
+      position:absolute;
+      left:-8px;top:10px;
+      border-right:8px solid var(--panel);
+      border-top:8px solid transparent;
+      border-bottom:8px solid transparent;
+    }
+    .msg.user::before {
+      content:"";
+      position:absolute;
+      right:-8px;top:10px;
+      border-left:8px solid var(--user);
+      border-top:8px solid transparent;
+      border-bottom:8px solid transparent;
+    }
+
+    .chat-footer {
+      padding:14px 16px;
+      border-top:1px solid var(--border);
+      background:var(--nav);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      transition:all .3s ease;
+    }
+
+    .mic {
+      width:48px;height:48px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:var(--panel);
+      display:grid;place-items:center;
+      cursor:pointer;
+      box-shadow:0 6px 14px var(--shadow1);
+    }
+    .mic svg {width:22px;height:22px;color:var(--brand);}
+
+    .input-wrap {
+      flex:1;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:8px 10px;
+    }
+    .input-wrap input {
+      flex:1;border:none;outline:none;font-size:15px;padding:6px 8px;
+      color:var(--text);background:transparent;
+    }
+    .send {
+      border:none;border-radius:12px;
+      background:linear-gradient(90deg,var(--user),var(--brand));
+      color:#fff;padding:10px 18px;
+      font-weight:600;cursor:pointer;
+      box-shadow:0 6px 14px rgba(79,70,229,.25);
+      transition:all .3s ease;
+    }
+
+    @media (max-width:1000px){
+      .main::after{width:100%;}
+      .container{grid-template-columns:1fr;}
+      .pet-area{height:460px;}
+      .chat-box{width:100%;transform:none;}
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="logo">🐶 Súp AI Pet</div>
+    <nav>
+      <a href="#" class="active">Home</a>
+      <a href="#">About us</a>
+      <a href="#">Service</a>
+      <a href="#">Profile</a>
+      <a href="#" id="modeToggle"> Mode</a>
+    </nav>
+  </header>
+
+  <section class="main">
+    <div class="container">
+      <div class="pet-area">
+        <model-viewer src="supp.glb" autoplay auto-rotate camera-controls disable-zoom></model-viewer>
+      </div>
+
+      <div class="chat-box">
+        <div class="chat-header">Trò chuyện với Súp</div>
+        <div id="chatBody" class="chat-body">
+          <div class="msg bot">Xin chào 👋 Mình là Súp!</div>
+          <div class="msg user">Chào Súp 🐶</div>
+        </div>
+        <div class="chat-footer">
+          <div class="mic" title="Nhấn để nói">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z"/>
+              <path d="M19 11a7 7 0 0 1-14 0"/>
+              <path d="M12 18v3"/>
+            </svg>
+          </div>
+          <div class="input-wrap">
+            <input id="msgInput" type="text" placeholder="Nhập tin nhắn..."/>
+            <button id="sendBtn" class="send">Gửi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // 🌓 Toggle chế độ sáng/tối
+    const modeBtn = document.getElementById("modeToggle");
+    modeBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      modeBtn.textContent = document.body.classList.contains("dark")
+        ? "Light Mode"
+        : "Dark Mode";
+    });
+
+    // 🗨️ Chat
+    const chatBody = document.getElementById('chatBody');
+    const input = document.getElementById('msgInput');
+    const send = document.getElementById('sendBtn');
+
+    function addMsg(text, who='user'){
+      const div = document.createElement('div');
+      div.className = 'msg ' + who;
+      div.textContent = text;
+      chatBody.appendChild(div);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    send.onclick = ()=>{
+      const val = input.value.trim();
+      if(!val) return;
+      addMsg(val,'user');
+      input.value='';
+      setTimeout(()=>addMsg('Súp hiểu nè 💬', 'bot'),600);
+    }
+
+    input.addEventListener('keydown', e=>{
+      if(e.key==='Enter') send.click();
+    });
+  </script>
+</body>
+</html>
